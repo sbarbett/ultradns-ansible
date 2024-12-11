@@ -4,6 +4,8 @@
 # Copyright: UltraDNS
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+from __future__ import absolute_import, print_function
+
 DOCUMENTATION = '''
 ---
 module: secondary_zone
@@ -160,39 +162,39 @@ EXAMPLES = '''
 '''
 RETURN = ''' # '''
 
-from __future__ import absolute_import, print_function
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.basic import env_fallback
 from ..module_utils.ultraapi import ultra_connection_spec
 from ..module_utils.ultraapi import UltraDNSModule
 
 PRIMARY_NS_SPEC = {
-  'ip': dict(required=True, type='str'),
-  'tsigKey': dict(required=False, type='str'),
-  'tsigKeyValue': dict(required=False, type='str'),
-  'tsigAlgorithm': dict(required=False, type='str', choices=['hmac-md5', 'sha-256', 'sha-512'])
+    'ip': dict(required=True, type='str'),
+    'tsigKey': dict(required=False, type='str'),
+    'tsigKeyValue': dict(required=False, type='str'),
+    'tsigAlgorithm': dict(required=False, type='str', choices=['hmac-md5', 'sha-256', 'sha-512'])
 }
 
-def main (): 
-  # Arguments required for the primary zone
-  argspec = {
-    'name': dict(required=True, type='str'),
-    'account': dict(required=True, type='str', fallback=(env_fallback, ['ULTRADNS_ACCOUNT'])),
-    'primary': dict(required=True, type='str', options=PRIMARY_NS_SPEC),
-    'state': dict(required=True, type='str', choices=['present', 'absent'])
-  }
 
-  # Add the arguments required for connecting to UltraDNS API
-  argspec.update(ultra_connection_spec())
+def main():
+    # Arguments required for the primary zone
+    argspec = {
+      'name': dict(required=True, type='str'),
+      'account': dict(required=True, type='str', fallback=(env_fallback, ['ULTRADNS_ACCOUNT'])),
+      'primary': dict(required=True, type='str', options=PRIMARY_NS_SPEC),
+      'state': dict(required=True, type='str', choices=['present', 'absent'])
+    }
 
-  module = AnsibleModule(argument_spec=argspec)
-  api = UltraDNSModule(module)
+    # Add the arguments required for connecting to UltraDNS API
+    argspec.update(ultra_connection_spec())
 
-  result = api.secondary_zone()
-  if 'failed' in result and result['failed']:
-    module.fail_json(**result)
-  else:
-    module.exit_json(**result)
+    module = AnsibleModule(argument_spec=argspec)
+    api = UltraDNSModule(module)
+
+    result = api.secondary_zone()
+    if 'failed' in result and result['failed']:
+        module.fail_json(**result)
+    else:
+        module.exit_json(**result)
 
 
 if __name__ == '__main__':

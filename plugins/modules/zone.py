@@ -89,25 +89,25 @@ from ansible.module_utils.basic import env_fallback
 from ..module_utils.ultraapi import ultra_connection_spec
 from ..module_utils.ultraapi import UltraDNSModule
 
-def main ():
-  # Arguments required for the primary zone
-  argspec = {
-    'name': dict(required=True, type='str'),
-    'account': dict(required=True, type='str', fallback=(env_fallback, ['ULTRADNS_ACCOUNT'])),
-    'state': dict(required=True, type='str', choices=['present', 'absent'])
-  }
+def main():
+    # Arguments required for the primary zone
+    argspec = {
+        'name': dict(required=True, type='str'),
+        'account': dict(required=True, type='str', fallback=(env_fallback, ['ULTRADNS_ACCOUNT'])),
+        'state': dict(required=True, type='str', choices=['present', 'absent'])
+    }
 
-  # Add the arguments required for connecting to UltraDNS API
-  argspec.update(ultra_connection_spec())
+    # Add the arguments required for connecting to UltraDNS API
+    argspec.update(ultra_connection_spec())
 
-  module = AnsibleModule(argument_spec=argspec)
-  api = UltraDNSModule(module)
+    module = AnsibleModule(argument_spec=argspec)
+    api = UltraDNSModule(module)
 
-  result = api.primary_zone()
-  if 'failed' in result and result['failed']:
-    module.fail_json(**result)
-  else:
-    module.exit_json(**result)
+    result = api.primary_zone()
+    if 'failed' in result and result['failed']:
+        module.fail_json(**result)
+    else:
+        module.exit_json(**result)
 
 
 if __name__ == '__main__':
