@@ -108,7 +108,7 @@ EXAMPLES = '''
 - name: Create a null MX record for example.com
   ultradns.ultradns.record:
     zone: example.com.
-    name: @
+    name: "@"
     type: MX
     data: 0 .
     state: present

@@ -97,10 +97,10 @@ EXAMPLES = '''
     name: secondary.com
     account: example-account
     primary:
-        ip: 10.0.0.1
-        tsigKey: keyname
-        tsigKeyValue: keyvalue
-        tsigAlgorithm: sha-256
+      ip: 10.0.0.1
+      tsigKey: keyname
+      tsigKeyValue: keyvalue
+      tsigAlgorithm: sha-256
     state: present
     provider:
       username: myuser
@@ -112,10 +112,10 @@ EXAMPLES = '''
     name: secondary.com
     account: example-account
     primary:
-        ip: 10.0.0.1
-        tsigKey: keyname
-        tsigKeyValue: new-keydata
-        tsigAlgorithm: sha-256
+      ip: 10.0.0.1
+      tsigKey: keyname
+      tsigKeyValue: new-keydata
+      tsigAlgorithm: sha-256
     state: present
     provider:
       username: myuser
@@ -127,7 +127,7 @@ EXAMPLES = '''
     name: example.com
     account: example-account
     primary:
-        ip: 10.0.0.1
+      ip: 10.0.0.1
     state: present
     provider:
       username: myuser
@@ -139,7 +139,7 @@ EXAMPLES = '''
     name: example.com
     account: example-account
     primary:
-        ip: 100.10.10.100
+      ip: 100.10.10.100
     state: present
     provider:
       username: myuser
@@ -151,7 +151,7 @@ EXAMPLES = '''
     name: example.com
     account: example-account
     primary:
-        ip: 10.0.0.1
+      ip: 10.0.0.1
     state: absent
     provider:
       username: myuser
