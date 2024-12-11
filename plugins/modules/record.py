@@ -25,7 +25,7 @@ options:
         description:
             - The record owner name
             - May be relative to the zone (e.g. 'www') or fully qualified (e.g. 'www.example.com.')
-            - V(@) may be used to for records at the zone apex
+            - V("@") may be used to for records at the zone apex
         type: str
         required: true
     type:
@@ -150,7 +150,7 @@ EXAMPLES = '''
 - name: Remove all MX records from the apex of example.com
   ultradns.ultradns.record:
     zone: example.com.
-    name: @
+    name: "@"
     type: MX
     state: absent
     connection: local
