@@ -89,7 +89,7 @@ notes:
     - "This module must be run locally, which can be achieved by specifying C(connection: local)"
     - When O(state=present) and the zone already exists, the module will call the UltraDNS API with PUT which will overwrite
       existing primary nameserver details.
-    - If setting TSIG keys in the O(primary) section, all O(tsigKey), O(tsigKeyValue), and O(tsigAlgorithm) must be set together.
+    - If setting TSIG keys in the O(primary) section, all O(primary.tsigKey), O(primary.tsigKeyValue), and O(primary.tsigAlgorithm) must be set together.
     - Refer to the L(UltraDNS API documentation,https://docs.ultradns.com/submenu.html) for more information.
 '''
 
@@ -170,8 +170,8 @@ from ..module_utils.ultraapi import UltraDNSModule
 PRIMARY_NS_SPEC = {
     'ip': dict(required=True, type='str'),
     'tsigKey': dict(required=False, type='str'),
-    'tsigKeyValue': dict(required=False, type='str'),
-    'tsigAlgorithm': dict(required=False, type='str', choices=['hmac-md5', 'sha-256', 'sha-512'])
+    'tsigKeyValue': dict(required=False, type='str', no_log=True),
+    'tsigAlgorithm': dict(required=False, type='str', no_log=True, choices=['hmac-md5', 'sha-256', 'sha-512'])
 }
 
 

@@ -308,10 +308,10 @@ class UltraDNSModule:
                     data.update({'ttl': self.params['ttl']})
 
                 res['changed'], res['failed'], res['msg'] = self.create_record(
-                        self.params['zone'],
-                        self.params['name'],
-                        self.params['type'],
-                        data)
+                    self.params['zone'],
+                    self.params['name'],
+                    self.params['type'],
+                    data)
             else:
                 # record exists.  check its properties (pools, etc)
                 # if data is already in the rdata list, return  no change
@@ -342,10 +342,10 @@ class UltraDNSModule:
                             data.update({'profile': {'@context': 'http://schemas.ultradns.com/RDPool.jsonschema', 'order': 'ROUND_ROBIN'}})
 
             res['changed'], res['failed'], res['msg'] = self.update_record(
-                    self.params['zone'],
-                    self.params['name'],
-                    self.params['type'],
-                    data)
+                self.params['zone'],
+                self.params['name'],
+                self.params['type'],
+                data)
             return res
         elif self.params['state'] == 'absent':
             # if the type is SOA, fail
