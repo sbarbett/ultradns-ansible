@@ -178,10 +178,10 @@ PRIMARY_NS_SPEC = {
 def main():
     # Arguments required for the primary zone
     argspec = {
-      'name': dict(required=True, type='str'),
-      'account': dict(required=True, type='str', fallback=(env_fallback, ['ULTRADNS_ACCOUNT'])),
-      'primary': dict(required=True, type='str', options=PRIMARY_NS_SPEC),
-      'state': dict(required=True, type='str', choices=['present', 'absent'])
+        'name': dict(required=True, type='str'),
+        'account': dict(required=True, type='str', fallback=(env_fallback, ['ULTRADNS_ACCOUNT'])),
+        'primary': dict(required=True, type='dict', options=PRIMARY_NS_SPEC),
+        'state': dict(required=True, type='str', choices=['present', 'absent'])
     }
 
     # Add the arguments required for connecting to UltraDNS API

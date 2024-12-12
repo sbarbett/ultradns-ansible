@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import, print_function
 __metaclass__ = type
 import json
 import time
@@ -10,13 +10,15 @@ try:
 except ImportError:
     HAS_REQUESTS = False
 
+
 class UltraAuthError(Exception):
     def __init__(self, message):
         super().__init__(message)
         self.message = message
-  
+
     def __str__(self):
         return str(self.message)
+
 
 class UltraConnection:
     def __init__(self, host='api.ultradns.com'):
@@ -41,14 +43,14 @@ class UltraConnection:
 
         if 'username' in kwargs and 'password' in kwargs:
             payload = {
-              'grant_type': 'password',
-              'username': kwargs['username'],
-              'password': kwargs['password']
+                'grant_type': 'password',
+                'username': kwargs['username'],
+                'password': kwargs['password']
             }
         elif 'refresh_token' in kwargs:
             payload = {
-              'grant_type': 'refresh_token',
-              'refresh_token': kwargs['refresh_token']
+                'grant_type': 'refresh_token',
+                'refresh_token': kwargs['refresh_token']
             }
         else:
             raise UltraAuthError('Missing authentication credentials')
@@ -99,9 +101,9 @@ class UltraConnection:
         params = kwargs['params'] if 'params' in kwargs else None
         data = kwargs['body'] if 'body' in kwargs else None
         response = requests.request(method, url,
-                                headers=self._headers(),
-                                params=params,
-                                data=data)
+                                    headers=self._headers(),
+                                    params=params,
+                                    data=data)
 
         if response.status_code == requests.codes.UNAUTHORIZED:
             retry = True
@@ -113,9 +115,9 @@ class UltraConnection:
 
         if retry:
             response = requests.request(method, url,
-                                  headers=self._headers(),
-                                  params=params,
-                                  data=data)
+                                        headers=self._headers(),
+                                        params=params,
+                                        data=data)
 
         if response.status_code == requests.codes.NO_CONTENT:
             return {}
@@ -130,8 +132,8 @@ class UltraConnection:
             payload = response.json()
             if isinstance(payload, list) and 'errorCode' in payload[0]:
                 return {'errorCode': payload[0]['errorCode'],
-                  'errorMessage': payload[0]['errorMessage'],
-                  'statusCode': response.status_code}
+                        'errorMessage': payload[0]['errorMessage'],
+                        'statusCode': response.status_code}
         except requests.exceptions.JSONDecodeError:
             payload = {}
 

@@ -92,6 +92,7 @@ from ansible.module_utils.basic import env_fallback
 from ..module_utils.ultraapi import ultra_connection_spec
 from ..module_utils.ultraapi import UltraDNSModule
 
+
 def main():
     # Arguments required for the primary zone
     argspec = {

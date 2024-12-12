@@ -15,6 +15,7 @@ CONNECTION_SPEC = {
 def ultra_connection_spec():
     return {'provider': dict(required=False, type='dict', options=CONNECTION_SPEC)}
 
+
 class UltraDNSModule:
     def __init__(self, module):
         self.module = module
@@ -55,12 +56,12 @@ class UltraDNSModule:
                 use_test = False
             self.params.update({
                 'provider': {'use_test': use_test,
-                      'username': env_fallback('ULTRADNS_USERNAME'),
-                      'password': '********'}})
+                             'username': env_fallback('ULTRADNS_USERNAME'),
+                             'password': '********'}})
         else:
             d = self.params['provider']
             missing += list(f'provider.{k}' for k in conn if k not in d or not d[k])
-    
+
         return missing
 
     def create_zone(self, data):
@@ -114,11 +115,11 @@ class UltraDNSModule:
 
     def primary_zone(self):
         res = {'changed': False, 'failed': False, 'msg': ''}
-    
+
         # check for required fields
         required = ['name', 'account', 'state']
         missing = self._check_params(required)
-    
+
         if missing:
             res['failed'] = True
             res['msg'] = f"Missing required fields: {', '.join(missing)}"
@@ -140,19 +141,20 @@ class UltraDNSModule:
                     res['msg'] = result['errorMessage']
                 else:
                     # zone probably doesn't exist. ok to create
-                    primary_data = {'properties': {
-                        'name': self.params['name'],
-                        'accountName': self.params['account'],
-                        'type': 'PRIMARY'
-                      },
-                      'primaryCreateInfo': {
-                          'forceImport': 'True',
-                          'createType': 'NEW'
-                      } } 
+                    primary_data = {
+                        'properties': {
+                            'name': self.params['name'],
+                            'accountName': self.params['account'],
+                            'type': 'PRIMARY'
+                        },
+                        'primaryCreateInfo': {
+                            'forceImport': 'True',
+                            'createType': 'NEW'
+                        }}
                     res['changed'], res['failed'], res['msg'] = self.create_zone(primary_data)
             else:
-                # zone exists, show its details 
-                res['msg'] = f"zone: {result['properties']['name']} type: {result['properties']['type']}" 
+                # zone exists, show its details
+                res['msg'] = f"zone: {result['properties']['name']} type: {result['properties']['type']}"
         elif self.params['state'] == 'absent':
             res['changed'], res['failed'], res['msg'] = self.delete_zone(self.params['name'])
         else:
@@ -163,12 +165,12 @@ class UltraDNSModule:
 
     def secondary_zone(self):
         res = {'changed': False, 'failed': False, 'msg': ''}
-    
+
         # check for required fields
         required = ['name', 'account', 'state']
         tsig = ['tsigKey', 'tsigKeyValue', 'tsigAlgorithm']
         missing = self._check_params(required)
-    
+
         if 'primary' not in self.params or not isinstance(self.params['primary'], dict):
             missing.append('primary')
         else:
@@ -205,8 +207,7 @@ class UltraDNSModule:
             'secondaryCreateInfo': {
                 'primaryNameServers': {
                     'nameServerIpList': {
-                        'nameServerIp1': primaryns
-            }}}}
+                        'nameServerIp1': primaryns}}}}
 
         if self.params['state'] == 'present':
             result = self.connection.get(f"/zones/{self.params['name']}")
@@ -217,15 +218,15 @@ class UltraDNSModule:
                     res['msg'] = result['errorMessage']
                 else:
                     # ok to create secondary zone
-                    data = {'properties': {
-                                'name': self.params['name'],
-                                'accountName': self.params['account'],
-                                'type': 'SECONDARY'
-                            }}
+                    data = {
+                        'properties': {
+                            'name': self.params['name'],
+                            'accountName': self.params['account'],
+                            'type': 'SECONDARY'}}
                     data.update(secondary_info)
                     res['changed'], res['failed'], res['msg'] = self.create_zone(data)
             else:
-                # zone exists 
+                # zone exists
                 # may need to update things like the primary nameserver
                 if result['properties']['type'] != 'SECONDARY':
                     res['msg'] = f"zone: {result['properties']['name']} type: {result['properties']['type']}"
@@ -247,12 +248,12 @@ class UltraDNSModule:
 
     def record(self):
         res = {'changed': False, 'failed': False, 'msg': ''}
-    
+
         # check for required fields
         # missing the `data` field is ok for certain delete actions. check on that later
         required = ['zone', 'name', 'type', 'state']
         missing = self._check_params(required)
-    
+
         if missing:
             res['failed'] = True
             res['msg'] = f"Missing required fields: {', '.join(missing)}"
@@ -262,7 +263,7 @@ class UltraDNSModule:
             res['failed'] = True
             res['msg'] = f"Unsupported record type {self.params['type']}"
             return res
-    
+
         if self.params['name'] == '@':
             self.params['name'] = self.params['zone']
 
@@ -293,7 +294,7 @@ class UltraDNSModule:
 
         if self.params['state'] == 'present':
             # check for presence of the `data`
-            if not 'data' in self.params or not self.params['data']:
+            if 'data' not in self.params or not self.params['data']:
                 res['failed'] = True
                 res['msg'] = 'Missing required field: data'
                 return res
@@ -307,10 +308,10 @@ class UltraDNSModule:
                     data.update({'ttl': self.params['ttl']})
 
                 res['changed'], res['failed'], res['msg'] = self.create_record(
-                                                        self.params['zone'],
-                                                        self.params['name'],
-                                                        self.params['type'],
-                                                        data)
+                        self.params['zone'],
+                        self.params['name'],
+                        self.params['type'],
+                        data)
             else:
                 # record exists.  check its properties (pools, etc)
                 # if data is already in the rdata list, return  no change
@@ -333,19 +334,18 @@ class UltraDNSModule:
                         data.update({'ttl': self.params['ttl']})
                     else:
                         data.update({'ttl': result['rrSets'][0]['ttl']})
-          
+
                     if self.params['type'] in ['A', 'AAAA'] and len(data['rdata']) > 1:
                         if 'profile' in result['rrSets'][0] and isinstance(result['rrSets'][0]['profile'], dict):
                             data.update({'profile': result['rrSets'][0]['profile']})
                         else:
                             data.update({'profile': {'@context': 'http://schemas.ultradns.com/RDPool.jsonschema', 'order': 'ROUND_ROBIN'}})
 
-
             res['changed'], res['failed'], res['msg'] = self.update_record(
-                                                      self.params['zone'],
-                                                      self.params['name'],
-                                                      self.params['type'],
-                                                      data)
+                    self.params['zone'],
+                    self.params['name'],
+                    self.params['type'],
+                    data)
             return res
         elif self.params['state'] == 'absent':
             # if the type is SOA, fail
@@ -363,7 +363,7 @@ class UltraDNSModule:
                 return res
             elif not result:
                 return res
-            elif not 'data' in self.params or not self.params['data']:
+            elif 'data' not in self.params or not self.params['data']:
                 res['changed'], res['failed'], res['msg'] = self.delete_record(self.params['zone'], self.params['name'], self.params['type'])
                 return res
             elif self.params['data'] not in result['rrSets'][0]['rdata']:
@@ -372,7 +372,8 @@ class UltraDNSModule:
                 if len(result['rrSets'][0]['rdata']) == 1:
                     res['changed'], res['failed'], res['msg'] = self.delete_record(self.params['zone'], self.params['name'], self.params['type'])
                 else:
-                    data = {'ttl': result['rrSets'][0]['ttl'],
+                    data = {
+                        'ttl': result['rrSets'][0]['ttl'],
                         'rdata': list(r for r in result['rrSets'][0]['rdata'] if r != self.params['data'])}
                     if 'profile' in result['rrSets'][0] and isinstance(result['rrSets'][0]['profile'], dict) and len(data['rdata']) > 1:
                         data.update({'profile': result['rrSets'][0]['profile']})
