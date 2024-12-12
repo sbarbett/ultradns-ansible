@@ -169,7 +169,7 @@ from ..module_utils.ultraapi import UltraDNSModule
 
 PRIMARY_NS_SPEC = {
     'ip': dict(required=True, type='str'),
-    'tsigKey': dict(required=False, type='str'),
+    'tsigKey': dict(required=False, type='str', no_log=True),
     'tsigKeyValue': dict(required=False, type='str', no_log=True),
     'tsigAlgorithm': dict(required=False, type='str', no_log=True, choices=['hmac-md5', 'sha-256', 'sha-512'])
 }
