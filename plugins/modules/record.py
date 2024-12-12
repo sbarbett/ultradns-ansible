@@ -4,7 +4,8 @@
 # Copyright: UltraDNS
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
+__metaclass__ = type
 
 DOCUMENTATION = '''
 ---
@@ -57,9 +58,11 @@ options:
             - Defaults to O(solo=false)
         required: false
         type: bool
+        default: false
     state:
         description:
             - The desired state of the record
+        type: str
         required: true
         choices: ['present', 'absent']
     provider:
@@ -84,7 +87,6 @@ options:
                     - The UltraDNS password. Set the E(ULTRADNS_PASSWORD) environment variable to avoid exposing this in your playbook
                 required: false
                 type: str
-                no_log: true
 requirements:
     - L(requests,https://pypi.org/project/requests/)
 notes:
