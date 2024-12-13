@@ -73,7 +73,7 @@ class UltraConnection:
 
     def _headers(self, content_type='application/json'):
         headers = {
-            'User-Agent': get_client_user_agent(),
+            'User-Agent': f'{PREFIX}{VERSION}',
             'Accept': 'application/json',
             'Authorization  ': f'Bearer {self.access_token}'
         }
