@@ -3,7 +3,7 @@ __metaclass__ = type
 import json
 import time
 
-VERSION = "0.1.0"
+VERSION = "0.5.0"
 PREFIX = "udns-ansible-"
 
 try:
