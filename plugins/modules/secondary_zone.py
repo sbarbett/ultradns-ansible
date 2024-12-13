@@ -15,6 +15,7 @@ short_description: Manage secondary zones in UltraDNS
 description:
     - Add or remove secondary zones in UltraDNS
 version_added: 0.1.0
+extends_documentation_fragment: ultradns.ultradns.ultra_provider
 options:
     name:
         description:
@@ -59,38 +60,12 @@ options:
         required: true
         type: str
         choices: ['present', 'absent']
-    provider:
-        description:
-            - Connection information for the UltraDNS API
-        required: false
-        type: dict
-        suboptions:
-            use_test:
-                description:
-                    - Whether to use the test API endpoint
-                required: false
-                type: bool
-                default: false
-            username:
-                description:
-                    - The UltraDNS username. Set the E(ULTRADNS_USERNAME) environment variable to avoid exposing this in your playbook
-                required: false
-                type: str
-            password:
-                description:
-                    - The UltraDNS password. Set the E(ULTRADNS_PASSWORD) environment variable to avoid exposing this in your playbook
-                required: false
-                type: str
 seealso:
     - module: M(ultradns.ultradns.zone)
-requirements:
-    - L(requests,https://pypi.org/project/requests/)
 notes:
-    - "This module must be run locally, which can be achieved by specifying C(connection: local)"
     - When O(state=present) and the zone already exists, the module will call the UltraDNS API with PUT which will overwrite
       existing primary nameserver details.
     - If setting TSIG keys in the O(primary) section, all O(primary.tsigKey), O(primary.tsigKeyValue), and O(primary.tsigAlgorithm) must be set together.
-    - Refer to the L(UltraDNS API documentation,https://docs.ultradns.com/submenu.html) for more information.
 '''
 
 EXAMPLES = '''
