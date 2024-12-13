@@ -13,8 +13,7 @@ authors:
 description: UltraDNS Ansible Collection allows the management of DNS zones and resource records in UltraDNS using Ansible and the UltraDNS API.
 license:
   - GPL-3.0-only
-license_file: LICENSE
-tags: 
+tags:
   - ultradns
   - dns
   - networking
