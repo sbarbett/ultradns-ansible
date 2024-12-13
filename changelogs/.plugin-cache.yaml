@@ -1,0 +1,34 @@
+objects:
+  role: {}
+plugins:
+  become: {}
+  cache: {}
+  callback: {}
+  cliconf: {}
+  connection: {}
+  filter: {}
+  httpapi: {}
+  inventory: {}
+  lookup: {}
+  module:
+    record:
+      description: Manage zone resource records in UltraDNS
+      name: record
+      namespace: ''
+      version_added: 0.1.0
+    secondary_zone:
+      description: Manage secondary zones in UltraDNS
+      name: secondary_zone
+      namespace: ''
+      version_added: 0.1.0
+    zone:
+      description: Manage primary zones in UltraDNS
+      name: zone
+      namespace: ''
+      version_added: 0.1.0
+  netconf: {}
+  shell: {}
+  strategy: {}
+  test: {}
+  vars: {}
+version: 0.1.0

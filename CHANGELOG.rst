@@ -1,6 +1,21 @@
-This should be updated by antsibull-changelog. Do not edit this manually!
+=================================
+Ultradns Collection Release Notes
+=================================
 
-See https://github.com/ansible-community/antsibull-changelog/blob/main/docs/changelogs.rst for
-information on how to use antsibull-changelog.
+.. contents:: Topics
 
-Check out ``changelogs/config.yaml`` for its configuration. You need to change at least the ``title`` field in there.
+v0.1.0
+======
+
+Release Summary
+---------------
+
+| Release Date: 2024-12-13
+| The initial pre-release to get the `ultradns.ultradns` collection into Galaxy
+
+New Modules
+-----------
+
+- record - Manage zone resource records in UltraDNS
+- secondary_zone - Manage secondary zones in UltraDNS
+- zone - Manage primary zones in UltraDNS
