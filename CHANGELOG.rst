@@ -4,6 +4,20 @@ Ultradns Collection Release Notes
 
 .. contents:: Topics
 
+v0.5.0
+======
+
+Release Summary
+---------------
+
+| Release Date: 2024-12-13
+| Project cleanup and refactor from initial results
+
+Minor Changes
+-------------
+
+- Add doc_fragments to reduce duplication in the documentation
+
 v0.1.0
 ======
 
