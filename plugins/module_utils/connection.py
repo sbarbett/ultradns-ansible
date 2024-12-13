@@ -2,7 +2,9 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 import json
 import time
-from .utils import get_client_user_agent
+
+VERSION = "0.1.0"
+PREFIX = "udns-ansible-"
 
 try:
     import requests
@@ -38,7 +40,7 @@ class UltraConnection:
 
         url = f'{self._get_connection()}/v1/authorization/token'
         headers = {
-            'User-Agent': get_client_user_agent(),
+            'User-Agent': f'{PREFIX}{VERSION}'
         }
 
         if 'username' in kwargs and 'password' in kwargs:
