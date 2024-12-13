@@ -5,20 +5,24 @@
 
 namespace: "ultradns"
 name: "ultradns"
-version: 1.0.0
+version: 0.1.0
 readme: README.md
 authors:
-  - your name <example@domain.com>
+  - ultradns
 
-description: your collection description
+description: UltraDNS Ansible Collection allows the management of DNS zones and resource records in UltraDNS using Ansible and the UltraDNS API.
+license:
+  - GPL-3.0-only
 license_file: LICENSE
-tags: ["ultradns", "dns", "networking"]
-dependencies: {}
+tags: 
+  - ultradns
+  - dns
+  - networking
 
-repository: http://example.com/repository
-documentation: http://docs.example.com
-homepage: http://example.com
-issues: http://example.com/issue/tracker
+repository: https://github.com/ultradns/ultradns-ansible/tree/master
+documentation: https://github.com/ultradns/ultradns-ansible/blob/master/README.md
+homepage: https://github.com/ultradns/ultradns-ansible
+issues: https://github.com/ultradns/ultradns-ansible/issues
 
 # A list of file glob-like patterns used to filter any files or directories that should not be included in the build
 # artifact. A pattern is matched from the relative path of the file or directory of the collection directory. This

@@ -14,7 +14,7 @@ author: UltraDNS (@ultradns)
 short_description: Manage secondary zones in UltraDNS
 description:
     - Add or remove secondary zones in UltraDNS
-version_added: 1.0.0
+version_added: 0.1.0
 options:
     name:
         description:
