@@ -1,0 +1,5 @@
+minor_changes:
+  - Add doc_fragments to reduce duplication in the documentation
+
+trivial:
+  - remove unused role and doc_site directories
