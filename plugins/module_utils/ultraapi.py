@@ -133,7 +133,7 @@ class UltraDNSModule:
                             'forceImport': 'True',
                             'createType': 'NEW'
                         }}
-                    res = self.create(f'/zones', primary_data)
+                    res = self.create('/zones', primary_data)
             else:
                 # zone exists, show its details
                 res = self._no_change(f"zone: {result['properties']['name']} type: {result['properties']['type']}")
@@ -200,7 +200,7 @@ class UltraDNSModule:
                             'accountName': self.params['account'],
                             'type': 'SECONDARY'}}
                     data.update(secondary_info)
-                    res = self.create(f'/zones', data)
+                    res = self.create('/zones', data)
             else:
                 # zone exists
                 # may need to update things like the primary nameserver
@@ -209,7 +209,7 @@ class UltraDNSModule:
                 else:
                     # check if the primary nameserver is different
                     if result['primaryNameServers']['nameServerIpList']['nameServerIp1'] != primaryns:
-                        res = self.update(f'/zones/{result['properties']['name']}', secondary_info)
+                        res = self.update(f"/zones/{result['properties']['name']}", secondary_info)
                     else:
                         res = self._success()
         elif self.params['state'] == 'absent':
