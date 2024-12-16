@@ -36,7 +36,7 @@ releases:
   1.0.0:
     changes:
       minor_changes:
-        - Moodule documentation cleanup
+        - Module documentation cleanup
         - Refactoring of the base UltraDNSModule class
       release_summary: '| Release Date: 2024-12-16
 

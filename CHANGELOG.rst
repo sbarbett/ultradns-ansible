@@ -16,7 +16,7 @@ Release Summary
 Minor Changes
 -------------
 
-- Moodule documentation cleanup
+- Module documentation cleanup
 - Refactoring of the base UltraDNSModule class
 
 v0.5.0
