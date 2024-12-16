@@ -19,12 +19,12 @@ extends_documentation_fragment: ultradns.ultradns.ultra_provider
 options:
     name:
         description:
-            - The name of the primary zone to manage
+            - The fully qualified (dot-terminated) name of the zone to manage
         required: true
         type: str
     account:
         description:
-            - The account name to which the primary zone belongs
+            - The account name to which the zone belongs as shown in the UltraDNS portal.
         required: true
         type: str
     state:
@@ -40,23 +40,17 @@ seealso:
 EXAMPLES = '''
 - name: Configure a zone on UltraDNS
   ultradns.ultradns.zone:
-    name: example.com
+    name: example.com.
     account: example-account
     state: present
-    provider:
-      username: myuser
-      password: mypass
-    connection: local
+    provider: "{{ ultra_provider }}"
 
 - name: Remove a zone from UltraDNS
   ultradns.ultradns.zone:
-    name: example.com
+    name: example.com.
     account: example-account
     state: absent
-    provider:
-      username: myuser
-      password: mypass
-    connection: local
+    provider: "{{ ultra_provider }}"
 '''
 
 RETURN = ''' # '''
@@ -79,7 +73,7 @@ def main():
     argspec.update(ultra_connection_spec())
 
     module = AnsibleModule(argument_spec=argspec)
-    api = UltraDNSModule(module)
+    api = UltraDNSModule(module.params)
 
     result = api.primary_zone()
     if 'failed' in result and result['failed']:

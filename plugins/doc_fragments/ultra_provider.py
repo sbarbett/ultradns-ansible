@@ -34,7 +34,7 @@ options:
                 required: false
                 type: str
 requirements:
-    - L(requests,https://pypi.org/project/requests/)
+    - python requests (https://pypi.org/project/requests/)
 notes:
     - "This module must be run locally which can be achieved by specifying C(connection: local)"
     - Refer to the L(UltraDNS API documentation,https://docs.ultradns.com/submenu.html) for more information.

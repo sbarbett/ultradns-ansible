@@ -1,14 +1,15 @@
-# Ultradns Modules for Ansible Collections
+# Ultradns Modules for Ansible Collection
 
 Collection of Ansible modules for managing UltraDNS zones and records
 
 ## Description
-The UltraDNS Ansible collection provides ability to manage UltraDNS zones and records using Ansible tasks.
+The UltraDNS Ansible collection provides ability to manage DNS zones and records on UltraDNS using Ansible tasks.
 
 ## Requirements
 
 - Python 3.10 or later
 - Ansible core 2.15 or later
+- [UltraDNS](https://vercara.com/authoritative-dns) account 
 - Python [Requests module](https://requests.readthedocs.io/)
 
 ## Modules
@@ -46,50 +47,67 @@ ansible-galaxy collection install ultradns.ultradns:==X.Y.Z
 ## Using the modules
 
 ### `connection: local`
-UltraDNS Ansible modules run from the control node and do not connect to hosts in the inventory.  Your tasks using `ultradns.ultradns.` modules must have the connection set to `local`.
+UltraDNS Ansible modules run from the control node.  Your tasks using `ultradns.ultradns.` modules must have the connection set to `local`.  Setting up the local connection can be done a couple of ways, refer to [Ansible documentation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_delegation.html#local-playbooks) for more information.
+
+- Put a localhost definition into your inventory
+
+```yaml
+---
+local:
+  hosts:
+    localhost:
+      ansible_connection: local
+...
+```
+
+- Alternatively, a local connection can be used in a single playbook play, even if other plays in the playbook use the default remote connection type
+
+```yaml
+---
+- hosts: 127.0.0.1
+  connection: local
+```
 
 ### Calling UltraDNS APIs
-The UltraDNS modules for Ansible call the UltraDNS API to make changes.  Your plays must know how to connect to your UltraDNS account, this can be done in the following ways:
+The UltraDNS modules for Ansible call the UltraDNS API to make changes.  Your tasks must know how to connect to your UltraDNS account, this can be done in the following ways:
 
-##### **Include a `provider` option in your playbook**
+##### **Include a `provider` variable in your playbook**
 
-UltraDNS modules provide an optional `provider` section described as follows
+UltraDNS modules provide an optional `provider` dictionary variable for UltraDNS authentication described as follows
 
 ```yaml
 provider:
-      username: string <username>
-      password: string <mypass>
-      use_test: boolean <True | False>
+      username: string <your UltraDNS username>
+      password: string <your UltraDNS password>
+      use_test: boolean <true | false>
 ```
 
 - `username` and `password` provide your UltraDNS credentials
-- `use_test`
-  - `use_test: True` forces the module to interact with the UltraDNS customer testing API
-  - `use_test: False` **(default)** sends the module to the main UltraDNS API endpoints
+- `use_test`: if true, forces the module to interact with the UltraDNS customer testing API instead of the main UltraDNS API. Default is `false`
 
-When using the `provider` section it recommended to define a variable inside of a vault to hide the credentials. For example:
-
-In your vault
-```yaml
-ultradns:
-  use_test: False
-  username: ultrauser
-  password: myUltraPa55word
-```
-
-Then in your plays, set the `provider` to `{{ ultradns }}` like so:
-```yaml
-tasks:
-  - name: ultradns primary zone
-    ultradns.ultradns.zone:
-      name: example.com.
-      account: accountname
-      state: present
-      provider: "{{ ultradns }}"
-```
+> When using the `provider` section it recommended to define a variable inside of a vault to hide the credentials. For example:
+> 
+> In your vault
+> ```yaml
+> ultra_provider:
+>   use_test: false
+>   username: <your UltraDNS username>
+>   password: <your UltraDNS password>
+> ```
+>
+> Then in your tasks, set the `provider` variable to `"{{ ultra_provider }}"` as:
+> ```yaml
+> tasks:
+>   - name: ultradns primary zone
+>     ultradns.ultradns.zone:
+>       name: example.com.
+>       account: accountname
+>       state: present
+>       provider: "{{ ultra_provider }}"
+> ```
 
 ##### **Use environment variables**
-The UltraDNS Ansible modules can get the necessary credentials from environment variables.  If there is no `provider` section or if the data in the provider is incomplete the modules will fallback to using the environment variables if they are available.
+The UltraDNS Ansible modules can also get the necessary credentials from environment variables.  If there is no `provider` section or if the data in the provider is incomplete the modules will fallback to using the environment variables if they are available.
 
 - `ULTRADNS_USERNAME` your UltraDNS username
 - `ULTRADNS_PASSWORD` your crendtial password
