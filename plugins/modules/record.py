@@ -76,10 +76,7 @@ EXAMPLES = '''
     type: A
     data: 127.0.0.1
     state: present
-    provider:
-      username: myuser
-      password: mypass
-    connection: local
+    provider: "{{ ultra_provider }}"
 
 - name: Create a null MX record for example.com
   ultradns.ultradns.record:
@@ -88,10 +85,7 @@ EXAMPLES = '''
     type: MX
     data: 0 .
     state: present
-    provider:
-      username: myuser
-      password: mypass
-    connection: local
+    provider: "{{ ultra_provider }}"
 
 - name: Add a TXT record to test.example.com
   ultradns.ultradns.record:
@@ -101,7 +95,7 @@ EXAMPLES = '''
     ttl: 3600
     data: "txt example"
     state: present
-    connection: local
+    provider: "{{ ultra_provider }}"
 
 - name: Add a second TXT record to test.example.com
   ultradns.ultradns.record:
@@ -112,7 +106,7 @@ EXAMPLES = '''
     data: "asdfghjkl"
     solo: false
     state: present
-    connection: local
+    provider: "{{ ultra_provider }}"
 
 - name: Remove the first TXT record from test.example.com
   ultradns.ultradns.record:
@@ -121,7 +115,7 @@ EXAMPLES = '''
     type: TXT
     data: "txt example"
     state: absent
-    connection: local
+    provider: "{{ ultra_provider }}"
 
 - name: Remove all MX records from the apex of example.com
   ultradns.ultradns.record:
@@ -129,7 +123,7 @@ EXAMPLES = '''
     name: "@"
     type: MX
     state: absent
-    connection: local
+    provider: "{{ ultra_provider }}"
 '''
 
 RETURN = ''' # '''
@@ -155,7 +149,7 @@ def main():
     argspec.update(ultra_connection_spec())
 
     module = AnsibleModule(argument_spec=argspec)
-    api = UltraDNSModule(module)
+    api = UltraDNSModule(module.params)
 
     result = api.record()
     if 'failed' in result and result['failed']:

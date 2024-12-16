@@ -13,18 +13,18 @@ module: secondary_zone
 author: UltraDNS (@ultradns)
 short_description: Manage secondary zones in UltraDNS
 description:
-    - Add or remove secondary zones in UltraDNS
+    - Add or remove secondary zones in UltraDNS. A secondary zone is a copy of a zone that is transferred from an external nameserver.
 version_added: 0.1.0
 extends_documentation_fragment: ultradns.ultradns.ultra_provider
 options:
     name:
         description:
-            - The name of the primary zone to manage
+            - The fully qualified (dot-terminated) name of the zone to transfer
         required: true
         type: str
     account:
         description:
-            - The account name to which the primary zone belongs
+            - The account name to which the zone belongs as shown in the UltraDNS portal.
         required: true
         type: str
     primary:
@@ -79,10 +79,7 @@ EXAMPLES = '''
       tsigKeyValue: keyvalue
       tsigAlgorithm: sha-256
     state: present
-    provider:
-      username: myuser
-      password: mypass
-    connection: local
+    provider: "{{ ultra_provider }}"
 
 - name: Update TSIG key for primary nameserver of a secondary zone
   ultradns.ultradns.zone:
@@ -94,10 +91,7 @@ EXAMPLES = '''
       tsigKeyValue: new-keydata
       tsigAlgorithm: sha-256
     state: present
-    provider:
-      username: myuser
-      password: mypass
-    connection: local
+    provider: "{{ ultra_provider }}"
 
 - name: Configure a secondary zone on UltraDNS to transfer from a primary nameserver without TSIG keys
   ultradns.ultradns.zone:
@@ -106,10 +100,7 @@ EXAMPLES = '''
     primary:
       ip: 10.0.0.1
     state: present
-    provider:
-      username: myuser
-      password: mypass
-    connection: local
+    provider: "{{ ultra_provider }}"
 
 - name: Update the primary nameserver of a secondary zone
   ultradns.ultradns.zone:
@@ -118,10 +109,7 @@ EXAMPLES = '''
     primary:
       ip: 100.10.10.100
     state: present
-    provider:
-      username: myuser
-      password: mypass
-    connection: local
+    provider: "{{ ultra_provider }}"
 
 - name: Remove a secondary zone from UltraDNS
   ultradns.ultradns.zone:
@@ -130,10 +118,7 @@ EXAMPLES = '''
     primary:
       ip: 10.0.0.1
     state: absent
-    provider:
-      username: myuser
-      password: mypass
-    connection: local
+    provider: "{{ ultra_provider }}"
 '''
 RETURN = ''' # '''
 
@@ -163,7 +148,7 @@ def main():
     argspec.update(ultra_connection_spec())
 
     module = AnsibleModule(argument_spec=argspec)
-    api = UltraDNSModule(module)
+    api = UltraDNSModule(module.params)
 
     result = api.secondary_zone()
     if 'failed' in result and result['failed']:
