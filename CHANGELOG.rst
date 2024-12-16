@@ -4,6 +4,15 @@ Ultradns Collection Release Notes
 
 .. contents:: Topics
 
+v1.0.1
+======
+
+Release Summary
+---------------
+
+| Release Date: 2024-12-16
+| fixing up readme for galaxy formatting and display
+
 v1.0.0
 ======
 

@@ -45,3 +45,11 @@ releases:
       - 1.0.0.yml
       - refactor.yml
     release_date: '2024-12-16'
+  1.0.1:
+    changes:
+      release_summary: '| Release Date: 2024-12-16
+
+        | fixing up readme for galaxy formatting and display'
+    fragments :
+      - 1.0.1.yml
+    release_date: '2024-12-16'

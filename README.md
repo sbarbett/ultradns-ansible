@@ -85,26 +85,26 @@ provider:
 - `username` and `password` provide your UltraDNS credentials
 - `use_test`: if true, forces the module to interact with the UltraDNS customer testing API instead of the main UltraDNS API. Default is `false`
 
-> When using the `provider` section it recommended to define a variable inside of a vault to hide the credentials. For example:
-> 
-> In your vault
-> ```yaml
-> ultra_provider:
->   use_test: false
->   username: <your UltraDNS username>
->   password: <your UltraDNS password>
-> ```
->
-> Then in your tasks, set the `provider` variable to `"{{ ultra_provider }}"` as:
-> ```yaml
-> tasks:
->   - name: ultradns primary zone
->     ultradns.ultradns.zone:
->       name: example.com.
->       account: accountname
->       state: present
->       provider: "{{ ultra_provider }}"
-> ```
+When using the `provider` section it recommended to define a variable inside of a vault to hide the credentials. For example:
+
+In your vault
+```yaml
+ultra_provider:
+  use_test: false
+  username: <your UltraDNS username>
+  password: <your UltraDNS password>
+```
+
+Then in your tasks, set the `provider` variable to `"{{ ultra_provider }}"` as:
+```yaml
+tasks:
+  - name: ultradns primary zone
+    ultradns.ultradns.zone:
+      name: example.com.
+      account: accountname
+      state: present
+      provider: "{{ ultra_provider }}"
+```
 
 ##### **Use environment variables**
 The UltraDNS Ansible modules can also get the necessary credentials from environment variables.  If there is no `provider` section or if the data in the provider is incomplete the modules will fallback to using the environment variables if they are available.
