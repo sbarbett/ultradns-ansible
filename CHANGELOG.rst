@@ -4,6 +4,21 @@ Ultradns Collection Release Notes
 
 .. contents:: Topics
 
+v1.0.0
+======
+
+Release Summary
+---------------
+
+| Release Date: 2024-12-16
+| Organizing the base UltraDNSModule class
+
+Minor Changes
+-------------
+
+- Moodule documentation cleanup
+- Refactoring of the base UltraDNSModule class
+
 v0.5.0
 ======
 
