@@ -53,3 +53,15 @@ releases:
     fragments:
       - 1.0.1.yml
     release_date: '2024-12-16'
+  1.0.2:
+    changes:
+      minor_changes:
+        - CNAME and SOA records now update correctly
+        - Fix v4 and v6 IP address comparisons
+      release_summary: '| Release Date: 2024-12-20
+
+        | improved AAAA record handling'
+    fragments:
+      - 1.0.2.yml
+      - fix-ipaddress.yml
+    release_date: '2024-12-20'

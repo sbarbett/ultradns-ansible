@@ -4,6 +4,21 @@ Ultradns Collection Release Notes
 
 .. contents:: Topics
 
+v1.0.2
+======
+
+Release Summary
+---------------
+
+| Release Date: 2024-12-20
+| improved AAAA record handling
+
+Minor Changes
+-------------
+
+- CNAME and SOA records now update correctly
+- Fix v4 and v6 IP address comparisons
+
 v1.0.1
 ======
 

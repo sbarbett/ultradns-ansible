@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 from ansible.module_utils.basic import env_fallback
+from ipaddress import ip_address
 from .connection import UltraConnection
 
 PROD = 'api.ultradns.com'
@@ -83,6 +84,27 @@ class UltraDNSModule:
             return self._fail_no_change(result['errorMessage'])
         else:
             return self._success()
+
+    def data_in_record(self, data, rrset, type):
+        if not isinstance(rrset, list) or not isinstance(data, str):
+            return False
+
+        if type not in ['A', 'AAAA']:
+            return data in rrset
+        else:
+            ipdata = ip_address(data)
+            iplist = list(ip_address(ip) for ip in rrset)
+            return ipdata in iplist
+
+    def remove_from_record(self, data, rrset, type):
+        if not isinstance(rrset, list) or not isinstance(data, str):
+            return rrset
+
+        if type not in ['A', 'AAAA']:
+            return list(r for r in rrset if r != data)
+        else:
+            ipdata = ip_address(data)
+            return list(r for r in rrset if ip_address(r) != ipdata)
 
     def create(self, path, data):
         if self.connection:
@@ -280,10 +302,17 @@ class UltraDNSModule:
                 #   add to the rdata list or replace the entire list
                 data = {}
                 if self.params['solo'] or self.params['type'] in ['CNAME', 'SOA']:
-                    data = {'rdata': [self.params['data']]}
+                    if len(result['rrSets'][0]['rdata']) == 1:
+                        if result['rrSets'][0]['rdata'][0] != self.params['data']:
+                            data = {'rdata': [self.params['data']]}
+                    else:
+                        data = {'rdata': [self.params['data']]}
                     if self.params['ttl']:
                         data.update({'ttl': self.params['ttl']})
-                elif self.params['data'] in result['rrSets'][0]['rdata']:
+
+                    if not data:
+                        return self._no_change()
+                elif self.data_in_record(self.params['data'], result['rrSets'][0]['rdata'], self.params['type']):
                     if self.params['ttl'] and self.params['ttl'] != result['rrSets'][0]['ttl']:
                         data = {'ttl': self.params['ttl'], 'rdata': result['rrSets'][0]['rdata']}
                     else:
@@ -319,7 +348,7 @@ class UltraDNSModule:
                 res = self._no_change()
             elif 'data' not in self.params or not self.params['data']:
                 res = self.delete(f"{path}/{self.params['name']}")
-            elif self.params['data'] not in result['rrSets'][0]['rdata']:
+            elif not self.data_in_record(self.params['data'], result['rrSets'][0]['rdata'], self.params['type']):
                 res = self._no_change()
             else:
                 if len(result['rrSets'][0]['rdata']) == 1:
@@ -327,7 +356,7 @@ class UltraDNSModule:
                 else:
                     data = {
                         'ttl': result['rrSets'][0]['ttl'],
-                        'rdata': list(r for r in result['rrSets'][0]['rdata'] if r != self.params['data'])}
+                        'rdata': self.remove_from_record(self.params['data'], result['rrSets'][0]['rdata'], self.params['type'])}
                     if 'profile' in result['rrSets'][0] and isinstance(result['rrSets'][0]['profile'], dict) and len(data['rdata']) > 1:
                         data.update({'profile': result['rrSets'][0]['profile']})
                     res = self.update(f"{path}/{self.params['name']}", data)
