@@ -61,7 +61,7 @@ options:
         type: str
         choices: ['present', 'absent']
 seealso:
-    - module: M(ultradns.ultradns.zone)
+    - module: ultradns.ultradns.zone
 notes:
     - When O(state=present) and the zone already exists, the module will call the UltraDNS API with PUT which will overwrite
       existing primary nameserver details.

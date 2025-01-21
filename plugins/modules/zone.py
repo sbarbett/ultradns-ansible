@@ -34,7 +34,7 @@ options:
         choices: ['present', 'absent']
         type: str
 seealso:
-    - module: M(ultradns.ultradns.secondary_zone)
+    - module: ultradns.ultradns.secondary_zone
 '''
 
 EXAMPLES = '''
