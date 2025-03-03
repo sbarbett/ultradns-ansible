@@ -7,136 +7,72 @@ VERSION = "1.0.0"
 PREFIX = "udns-ansible-"
 
 try:
-    import requests
-    HAS_REQUESTS = True
+    from ultra_rest_client import RestApiConnection, AuthError as UltraAuthError
+    HAS_SDK = True
 except ImportError:
-    HAS_REQUESTS = False
+    HAS_SDK = False
 
 
-class UltraAuthError(Exception):
-    def __init__(self, message):
-        super().__init__(message)
-        self.message = message
-
-    def __str__(self):
-        return str(self.message)
-
-
-class UltraConnection:
+class UltraConnection(RestApiConnection):
     def __init__(self, host='api.ultradns.com'):
-        self.host = host
-        self.access_token = None
-        self.refresh_token = None
-
-    def _get_connection(self):
-        if self.host.startswith('https://'):
-            return self.host
-        else:
-            return f'https://{self.host}'
+        custom_headers = {'User-Agent': f'{PREFIX}{VERSION}'}
+        super().__init__(host=host, custom_headers=custom_headers)
 
     def _authenticate(self, **kwargs):
-        if not HAS_REQUESTS:
-            raise Exception('requests library is required for this module')
-
-        url = f'{self._get_connection()}/v1/authorization/token'
-        headers = {
-            'User-Agent': f'{PREFIX}{VERSION}'
-        }
+        if not HAS_SDK:
+            raise Exception('ultra_rest_client library is required for this module')
 
         if 'username' in kwargs and 'password' in kwargs:
-            payload = {
-                'grant_type': 'password',
-                'username': kwargs['username'],
-                'password': kwargs['password']
-            }
+            self.auth(kwargs['username'], kwargs['password'])
         elif 'refresh_token' in kwargs:
-            payload = {
-                'grant_type': 'refresh_token',
-                'refresh_token': kwargs['refresh_token']
-            }
+            self._refresh()
         else:
             raise UltraAuthError('Missing authentication credentials')
 
-        response = requests.post(url, headers=headers, data=payload)
-        if response.status_code == requests.codes.OK:
-            response_data = response.json()
-            self.access_token = response_data['access_token']
-            self.refresh_token = response_data['refresh_token']
-        else:
-            raise UltraAuthError(f'Failed to authenticate: {response.text}')
-
-    def auth(self, username: str, password: str):
-        self._authenticate(username=username, password=password)
-
-    def _refresh(self):
-        self._authenticate(refresh_token=self.refresh_token)
-
-    def _headers(self, content_type='application/json'):
-        headers = {
-            'User-Agent': f'{PREFIX}{VERSION}',
-            'Accept': 'application/json',
-            'Authorization  ': f'Bearer {self.access_token}'
-        }
-        if content_type:
-            headers['Content-Type'] = content_type
-        return headers
-
     def get(self, uri, params=None):
-        params = params or {}
-        return self._do_call("GET", uri, params=params)
+        result = super().get(uri, params)
+        return self._ensure_response_format(result)
 
     def post(self, uri, body=None):
-        return self._do_call("POST", uri, body=json.dumps(body)) if body is not None else self._do_call("POST", uri)
+        if body is not None:
+            body = json.dumps(body) if isinstance(body, (dict, list)) else body
+        result = super().post(uri, body)
+        return self._ensure_response_format(result)
 
     def put(self, uri, body):
-        return self._do_call("PUT", uri, body=json.dumps(body))
-
-    def patch(self, uri, body):
-        return self._do_call("PATCH", uri, body=json.dumps(body))
+        body = json.dumps(body) if isinstance(body, (dict, list)) else body
+        result = super().put(uri, body)
+        return self._ensure_response_format(result)
 
     def delete(self, uri):
-        return self._do_call("DELETE", uri)
+        result = super().delete(uri)
+        return self._ensure_response_format(result)
 
-    def _do_call(self, method, path, **kwargs):
-        retry = False
-        url = f'{self._get_connection()}/{path}'
-        params = kwargs['params'] if 'params' in kwargs else None
-        data = kwargs['body'] if 'body' in kwargs else None
-        response = requests.request(method, url,
-                                    headers=self._headers(),
-                                    params=params,
-                                    data=data)
+    def _ensure_response_format(self, result):
+        # Ensure result is a dict
+        if isinstance(result, str):
+            try:
+                result = json.loads(result)
+            except json.JSONDecodeError:
+                return result
 
-        if response.status_code == requests.codes.UNAUTHORIZED:
-            retry = True
-            self._refresh()
+        # Handle list responses
+        if isinstance(result, list):
+            if result and isinstance(result[0], dict) and 'errorCode' in result[0]:
+                return {
+                    'errorCode': result[0]['errorCode'],
+                    'errorMessage': result[0].get('errorMessage', ''),
+                    'statusCode': 400
+                }
+            return {'rrSets': result} if result and isinstance(result[0], dict) and 'rdata' in result[0] else result
 
-        if response.status_code == requests.codes.TOO_MANY:
-            retry = True
-            time.sleep(1)
+        # Handle dict responses
+        if isinstance(result, dict):
+            if 'errorCode' in result:
+                return {
+                    'errorCode': result['errorCode'],
+                    'errorMessage': result.get('errorMessage', ''),
+                    'statusCode': result.get('statusCode', 400)
+                }
 
-        if retry:
-            response = requests.request(method, url,
-                                        headers=self._headers(),
-                                        params=params,
-                                        data=data)
-
-        if response.status_code == requests.codes.NO_CONTENT:
-            return {}
-        if 'content-type' not in response.headers:
-            response.headers['content-type'] = 'none'
-
-        # if the content-type is text/plain just return the text
-        if response.headers.get('content-type') == 'text/plain':
-            return response.text
-
-        try:
-            payload = response.json()
-            if isinstance(payload, list) and 'errorCode' in payload[0]:
-                return {'errorCode': payload[0]['errorCode'],
-                        'errorMessage': payload[0]['errorMessage'],
-                        'statusCode': response.status_code}
-        except requests.exceptions.JSONDecodeError:
-            payload = {}
-
-        return payload
+        return result

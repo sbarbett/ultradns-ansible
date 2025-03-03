@@ -307,8 +307,13 @@ class UltraDNSModule:
                             data = {'rdata': [self.params['data']]}
                     else:
                         data = {'rdata': [self.params['data']]}
-                    if self.params['ttl']:
-                        data.update({'ttl': self.params['ttl']})
+                    
+                    # Only add TTL if we're already making a change or if TTL is different
+                    if data or (self.params['ttl'] and self.params['ttl'] != result['rrSets'][0]['ttl']):
+                        if self.params['ttl']:
+                            data.update({'ttl': self.params['ttl']})
+                        elif data:  # If making rdata change but no TTL specified, preserve existing TTL
+                            data.update({'ttl': result['rrSets'][0]['ttl']})
 
                     if not data:
                         return self._no_change()
