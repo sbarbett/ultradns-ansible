@@ -44,6 +44,11 @@ class UltraConnection(RestApiConnection):
         result = super().put(uri, body)
         return self._ensure_response_format(result)
 
+    def patch(self, uri, body):
+        body = json.dumps(body) if isinstance(body, (dict, list)) else body
+        result = super().patch(uri, body)
+        return self._ensure_response_format(result)
+
     def delete(self, uri):
         result = super().delete(uri)
         return self._ensure_response_format(result)

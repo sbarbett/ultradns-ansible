@@ -40,12 +40,14 @@ options:
         description:
             - The record time-to-live (TTL) in seconds
             - Defaults to UltraDNS account default if not specified
+            - Can be updated without specifying data for existing records
         type: int
         required: false
     data:
         description:
             - The complete rdata of the record as a string
-            - Required for O(state=present)
+            - Required for O(state=present) when creating a new record
+            - If not specified for O(state=present) with an existing record, only the TTL will be updated
             - If not specified for O(state=absent), all records in the rrset will be removed
         type: str
         required: false
@@ -105,6 +107,15 @@ EXAMPLES = '''
     ttl: 3600
     data: "asdfghjkl"
     solo: false
+    state: present
+    provider: "{{ ultra_provider }}"
+
+- name: Update only the TTL of an existing record
+  ultradns.ultradns.record:
+    zone: example.com.
+    name: test
+    type: A
+    ttl: 7200
     state: present
     provider: "{{ ultra_provider }}"
 

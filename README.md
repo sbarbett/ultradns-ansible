@@ -10,6 +10,7 @@ The UltraDNS Ansible collection provides ability to manage DNS zones and records
 - Python 3.10 or later
 - Ansible core 2.15 or later
 - [UltraDNS](https://vercara.com/authoritative-dns) account 
+- [UltraDNS Python REST API Client](https://github.com/ultradns/python_rest_api_client)
 - Python [Requests module](https://requests.readthedocs.io/)
 
 ## Modules

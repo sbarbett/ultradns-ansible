@@ -1,0 +1,34 @@
+---
+# Example playbook demonstrating updates to both TTL and record data
+# This playbook updates both the TTL and data of an existing record
+
+- name: Update DNS Record TTL and Data
+  hosts: localhost
+  gather_facts: no
+  vars:
+    ultra_provider:
+      username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
+      password: "{{ lookup('env', 'ULTRADNS_PASSWORD') }}"
+      use_test: "{{ lookup('env', 'ULTRADNS_USE_TEST') | default(false) | bool }}"
+    zone_name: "example.com."
+    record_name: "www"
+    record_type: "A"
+    new_ttl: 7200
+    new_data: "192.0.2.100"
+
+  tasks:
+    - name: Update record TTL and data
+      ultradns.ultradns.record:
+        zone: "{{ zone_name }}"
+        name: "{{ record_name }}"
+        type: "{{ record_type }}"
+        ttl: "{{ new_ttl }}"
+        rdata:
+          - "{{ new_data }}"
+        state: present
+        provider: "{{ ultra_provider }}"
+      register: update_result
+
+    - name: Show update result
+      debug:
+        var: update_result 

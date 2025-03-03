@@ -118,6 +118,12 @@ class UltraDNSModule:
         else:
             return self._fail_no_change(msg='Not connected to UltraDNS API')
 
+    def patch(self, path, data):
+        if self.connection:
+            return self._check_result(self.connection.patch(path, data))
+        else:
+            return self._fail_no_change(msg='Not connected to UltraDNS API')
+
     def delete(self, path):
         if self.connection:
             return self._check_result(self.connection.delete(path))
@@ -242,7 +248,7 @@ class UltraDNSModule:
 
     def record(self):
         # check for required fields
-        # missing the `data` field is ok for certain delete actions. check on that later
+        # missing the `data` field is ok for certain delete actions and TTL-only updates. check on that later
         required = ['zone', 'name', 'type', 'state']
         missing = self._check_params(required)
 
@@ -278,7 +284,20 @@ class UltraDNSModule:
 
         res = {}
         if self.params['state'] == 'present':
-            # check for presence of the `data`
+            # Check if this is a TTL-only update (data not provided but ttl is)
+            if ('data' not in self.params or not self.params['data']) and 'ttl' in self.params and self.params['ttl']:
+                if not result:
+                    return self._fail_no_change('Record does not exist. Cannot update TTL only.')
+                
+                # Check if TTL is already set to the requested value
+                if self.params['ttl'] == result['rrSets'][0]['ttl']:
+                    return self._no_change('TTL already set to requested value')
+                
+                # Use PATCH to update only the TTL
+                data = {'ttl': self.params['ttl']}
+                return self.patch(f"{path}/{self.params['name']}", data)
+            
+            # Regular record update with data
             if 'data' not in self.params or not self.params['data']:
                 return self._fail_no_change('Missing required field: data')
 

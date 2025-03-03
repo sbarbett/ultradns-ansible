@@ -1,0 +1,34 @@
+---
+# Example playbook demonstrating creation of a single DNS record
+# This playbook creates a single record with specified settings
+
+- name: Create Single DNS Record
+  hosts: localhost
+  gather_facts: no
+  vars:
+    ultra_provider:
+      username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
+      password: "{{ lookup('env', 'ULTRADNS_PASSWORD') }}"
+      use_test: "{{ lookup('env', 'ULTRADNS_USE_TEST') | default(false) | bool }}"
+    zone_name: "example.com."
+    record_name: "www"
+    record_type: "A"
+    record_ttl: 300
+    record_data: "192.0.2.1"
+
+  tasks:
+    - name: Create DNS record
+      ultradns.ultradns.record:
+        zone: "{{ zone_name }}"
+        name: "{{ record_name }}"
+        type: "{{ record_type }}"
+        ttl: "{{ record_ttl }}"
+        rdata: 
+          - "{{ record_data }}"
+        state: present
+        provider: "{{ ultra_provider }}"
+      register: record_result
+
+    - name: Show record creation result
+      debug:
+        var: record_result 

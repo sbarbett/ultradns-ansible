@@ -1,0 +1,7 @@
+---
+minor_changes:
+  - refactored base connection module to use the ultra_rest_client for connection
+  - fixed the error it was returning if you tried to rerun a solo record playbook with no change to the rdata
+  - "record - Added support for TTL-only updates without requiring the data parameter"
+  - "Added PATCH method to the UltraConnection class for partial updates"
+release_summary: Added support for TTL-only updates of DNS records and refactored the connection module to use the ultra_rest_client.

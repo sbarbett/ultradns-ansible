@@ -1,0 +1,28 @@
+---
+# Example playbook demonstrating zone creation in UltraDNS
+# This playbook creates a new DNS zone with specified settings
+
+- name: Create DNS Zone
+  hosts: localhost
+  gather_facts: no
+  vars:
+    ultra_provider:
+      username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
+      password: "{{ lookup('env', 'ULTRADNS_PASSWORD') }}"
+      use_test: "{{ lookup('env', 'ULTRADNS_USE_TEST') | default(false) | bool }}"
+    zone_name: "example.com."
+    account_name: "test_account"
+
+  tasks:
+    - name: Create a new zone
+      ultradns.ultradns.zone:
+        name: "{{ zone_name }}"
+        account_name: "{{ account_name }}"
+        type: "PRIMARY"
+        state: present
+        provider: "{{ ultra_provider }}"
+      register: zone_result
+
+    - name: Show zone creation result
+      debug:
+        var: zone_result 
