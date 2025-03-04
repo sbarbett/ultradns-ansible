@@ -1,16 +1,54 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 import json
-import time
 
 VERSION = "1.0.0"
 PREFIX = "udns-ansible-"
 
+
+# Define mock classes first, outside the try block
+class MockAuthError(Exception):
+    """Mock AuthError for when ultra_rest_client is not available"""
+    pass
+
+
+class MockRestApiConnection:
+    """Mock RestApiConnection for when ultra_rest_client is not available"""
+    def __init__(self, host=None, custom_headers=None):
+        self.host = host
+        self.custom_headers = custom_headers or {}
+
+    def auth(self, username, password):
+        pass
+
+    def get(self, uri, params=None):
+        return {}
+
+    def post(self, uri, body=None):
+        return {}
+
+    def put(self, uri, body):
+        return {}
+
+    def patch(self, uri, body):
+        return {}
+
+    def delete(self, uri):
+        return {}
+
+
+# Set default implementations
+RestApiConnection = MockRestApiConnection
+UltraAuthError = MockAuthError
+HAS_SDK = False
+
+# Try to import the real implementations
 try:
     from ultra_rest_client import RestApiConnection, AuthError as UltraAuthError
     HAS_SDK = True
 except ImportError:
-    HAS_SDK = False
+    # Keep using the mock classes defined above
+    pass
 
 
 class UltraConnection(RestApiConnection):

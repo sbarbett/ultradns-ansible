@@ -4,7 +4,7 @@
 
 - name: Delete DNS Records
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   vars:
     ultra_provider:
       username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
@@ -31,5 +31,5 @@
       loop: "{{ records_to_delete }}"
 
     - name: Show deletion results
-      debug:
-        var: delete_result 
+      ansible.builtin.debug:
+        var: delete_result

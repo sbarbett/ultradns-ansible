@@ -4,7 +4,7 @@
 
 - name: Update DNS Record TTL and Data
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   vars:
     ultra_provider:
       username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
@@ -30,5 +30,5 @@
       register: update_result
 
     - name: Show update result
-      debug:
-        var: update_result 
+      ansible.builtin.debug:
+        var: update_result

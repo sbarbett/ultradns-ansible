@@ -4,7 +4,7 @@
 
 - name: Create Multiple DNS Records
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   vars:
     ultra_provider:
       username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
@@ -42,5 +42,5 @@
       loop: "{{ records }}"
 
     - name: Show record creation results
-      debug:
-        var: record_result 
+      ansible.builtin.debug:
+        var: record_result

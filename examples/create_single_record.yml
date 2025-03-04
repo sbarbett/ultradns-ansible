@@ -4,7 +4,7 @@
 
 - name: Create Single DNS Record
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   vars:
     ultra_provider:
       username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
@@ -23,12 +23,12 @@
         name: "{{ record_name }}"
         type: "{{ record_type }}"
         ttl: "{{ record_ttl }}"
-        rdata: 
+        rdata:
           - "{{ record_data }}"
         state: present
         provider: "{{ ultra_provider }}"
       register: record_result
 
     - name: Show record creation result
-      debug:
-        var: record_result 
+      ansible.builtin.debug:
+        var: record_result

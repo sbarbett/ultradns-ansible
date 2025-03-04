@@ -288,15 +288,15 @@ class UltraDNSModule:
             if ('data' not in self.params or not self.params['data']) and 'ttl' in self.params and self.params['ttl']:
                 if not result:
                     return self._fail_no_change('Record does not exist. Cannot update TTL only.')
-                
+
                 # Check if TTL is already set to the requested value
                 if self.params['ttl'] == result['rrSets'][0]['ttl']:
                     return self._no_change('TTL already set to requested value')
-                
+
                 # Use PATCH to update only the TTL
                 data = {'ttl': self.params['ttl']}
                 return self.patch(f"{path}/{self.params['name']}", data)
-            
+
             # Regular record update with data
             if 'data' not in self.params or not self.params['data']:
                 return self._fail_no_change('Missing required field: data')
@@ -326,7 +326,7 @@ class UltraDNSModule:
                             data = {'rdata': [self.params['data']]}
                     else:
                         data = {'rdata': [self.params['data']]}
-                    
+
                     # Only add TTL if we're already making a change or if TTL is different
                     if data or (self.params['ttl'] and self.params['ttl'] != result['rrSets'][0]['ttl']):
                         if self.params['ttl']:
