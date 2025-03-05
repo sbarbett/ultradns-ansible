@@ -4,6 +4,23 @@ Ultradns Collection Release Notes
 
 .. contents:: Topics
 
+v1.0.3
+======
+
+Release Summary
+---------------
+
+| Release Date: 2024-03-03
+| Added support for TTL-only updates of DNS records and refactored the connection module to use the ultra_rest_client.
+
+Minor Changes
+-------------
+
+- Added support for TTL-only updates of DNS records without requiring the `data` parameter
+- Added PATCH method to the UltraConnection class for partial updates
+- Refactored base connection module to use the ultra_rest_client for connection
+- Fixed the error it was returning if you tried to rerun a solo record playbook with no change to the rdata
+
 v1.0.2
 ======
 

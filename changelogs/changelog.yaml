@@ -65,3 +65,14 @@ releases:
       - 1.0.2.yml
       - fix-ipaddress.yml
     release_date: '2024-12-20'
+  1.0.3:
+    changes:
+      minor_changes:
+        - Added support for TTL-only updates of DNS records
+        - Refactored the connection module to use the ultra_rest_client
+      release_summary: '| Release Date: 2025-03-04
+
+        | Added support for TTL-only updates of DNS records'
+    fragments:
+      - 1.0.3.yml
+    release_date: '2025-03-04'

@@ -1,0 +1,25 @@
+---
+# Example playbook demonstrating zone deletion in UltraDNS
+# This playbook removes a DNS zone and all its records
+
+- name: Delete DNS Zone
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ultra_provider:
+      username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
+      password: "{{ lookup('env', 'ULTRADNS_PASSWORD') }}"
+      use_test: "{{ lookup('env', 'ULTRADNS_USE_TEST') | default(false) | bool }}"
+    zone_name: "example.com."
+
+  tasks:
+    - name: Delete zone
+      ultradns.ultradns.zone:
+        name: "{{ zone_name }}"
+        state: absent
+        provider: "{{ ultra_provider }}"
+      register: zone_result
+
+    - name: Show zone deletion result
+      ansible.builtin.debug:
+        var: zone_result

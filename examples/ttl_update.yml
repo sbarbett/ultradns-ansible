@@ -1,0 +1,31 @@
+---
+# Example playbook demonstrating TTL-only updates for DNS records
+# This playbook updates the TTL of an existing record without modifying its data
+
+- name: Update TTL of DNS records
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ultra_provider:
+      username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
+      password: "{{ lookup('env', 'ULTRADNS_PASSWORD') }}"
+      use_test: "{{ lookup('env', 'ULTRADNS_USE_TEST') | default(false) | bool }}"
+    zone_name: "example.com."
+    record_name: "www"
+    record_type: "A"
+    new_ttl: 7200
+
+  tasks:
+    - name: Update TTL of an existing record
+      ultradns.ultradns.record:
+        zone: "{{ zone_name }}"
+        name: "{{ record_name }}"
+        type: "{{ record_type }}"
+        ttl: "{{ new_ttl }}"
+        state: present
+        provider: "{{ ultra_provider }}"
+      register: update_result
+
+    - name: Show update result
+      ansible.builtin.debug:
+        var: update_result
