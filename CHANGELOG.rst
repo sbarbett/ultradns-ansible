@@ -4,6 +4,20 @@ Ultradns Collection Release Notes
 
 .. contents:: Topics
 
+v1.1.0
+======
+
+Release Summary
+---------------
+
+| Release Date: 2025-03-21
+| Added support for zone_facts module
+
+New Modules
+-----------
+
+- zone_facts - Get facts about zones in UltraDNS
+
 v1.0.3
 ======
 

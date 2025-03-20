@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 import json
 
-VERSION = "1.0.3"
+VERSION = "1.1.0"
 PREFIX = "udns-ansible-"
 
 

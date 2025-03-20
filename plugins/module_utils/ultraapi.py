@@ -387,3 +387,116 @@ class UltraDNSModule:
         else:
             res = self._fail_no_change(f"Unsupported state {self.params['state']}")
         return res
+
+    def get_zones(self):
+        """
+        Retrieve all zones from the UltraDNS API with pagination support.
+        
+        This function handles cursor-based pagination automatically, making multiple
+        requests as needed to retrieve all zones. The default limit is set to 1000 
+        zones per request, and filtering is done based on provided parameters.
+        
+        Returns:
+            A list of zone objects from the API response
+        """
+        # Connect to the API
+        if not self.connect():
+            return [], self._fail_no_change()
+        
+        # Initialize empty zones list and base URL
+        all_zones = []
+        base_path = '/v3/zones'
+        
+        # Build the query string for filters
+        query_parts = []
+        
+        # Add limit parameter
+        query_parts.append('limit=1000')
+        
+        # Filter by name (partial match)
+        if 'name' in self.params and self.params['name']:
+            query_parts.append(f"q=name:{self.params['name']}")
+        
+        # Filter by zone type
+        if 'type' in self.params and self.params['type']:
+            zone_type = self.params['type']
+            if zone_type in ['PRIMARY', 'SECONDARY', 'ALIAS']:
+                if 'q=' in ' '.join(query_parts):
+                    # Append to existing q parameter
+                    q_index = next(i for i, part in enumerate(query_parts) if part.startswith('q='))
+                    query_parts[q_index] = f"{query_parts[q_index]}+zone_type:{zone_type}"
+                else:
+                    query_parts.append(f"q=zone_type:{zone_type}")
+        
+        # Filter by status
+        if 'status' in self.params and self.params['status']:
+            status = self.params['status']
+            if status in ['ACTIVE', 'SUSPENDED', 'ALL']:
+                if 'q=' in ' '.join(query_parts):
+                    # Append to existing q parameter
+                    q_index = next(i for i, part in enumerate(query_parts) if part.startswith('q='))
+                    query_parts[q_index] = f"{query_parts[q_index]}+zone_status:{status}"
+                else:
+                    query_parts.append(f"q=zone_status:{status}")
+        
+        # Filter by account name
+        if 'account' in self.params and self.params['account']:
+            # URL-encode spaces in account name
+            account = self.params['account'].replace(' ', '%20')
+            if 'q=' in ' '.join(query_parts):
+                # Append to existing q parameter
+                q_index = next(i for i, part in enumerate(query_parts) if part.startswith('q='))
+                query_parts[q_index] = f"{query_parts[q_index]}+account_name:{account}"
+            else:
+                query_parts.append(f"q=account_name:{account}")
+        
+        # Filter by network
+        if 'network' in self.params and self.params['network']:
+            network = self.params['network']
+            if network in ['ultra1', 'ultra2']:
+                if 'q=' in ' '.join(query_parts):
+                    # Append to existing q parameter
+                    q_index = next(i for i, part in enumerate(query_parts) if part.startswith('q='))
+                    query_parts[q_index] = f"{query_parts[q_index]}+network:{network}"
+                else:
+                    query_parts.append(f"q=network:{network}")
+        
+        # Build initial path with query parameters
+        path = base_path
+        if query_parts:
+            path = f"{base_path}?{'&'.join(query_parts)}"
+        
+        # Track if we have more data to fetch
+        has_more = True
+        next_path = path
+        
+        while has_more:
+            # Get zones with current path
+            result = self.connection.get(next_path)
+            
+            # Check if response has an error
+            if 'errorCode' in result:
+                return [], self._fail_no_change(result['errorMessage'])
+            
+            # Add zones from current response to our collection
+            if 'zones' in result and isinstance(result['zones'], list):
+                all_zones.extend(result['zones'])
+            
+            # Check for cursorInfo to determine if more data is available
+            if 'cursorInfo' in result and result['cursorInfo'].get('next'):
+                cursor = result['cursorInfo']['next']
+                # Determine if the path already has query parameters
+                if '?' in next_path:
+                    if 'cursor=' in next_path:
+                        # Replace existing cursor parameter
+                        next_path = next_path.split('cursor=')[0] + f"cursor={cursor}"
+                    else:
+                        # Add cursor parameter
+                        next_path = f"{next_path}&cursor={cursor}"
+                else:
+                    # Add cursor as first parameter
+                    next_path = f"{next_path}?cursor={cursor}"
+            else:
+                has_more = False
+        
+        return all_zones, self._no_change(f"Retrieved {len(all_zones)} zones")
