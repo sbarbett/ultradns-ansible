@@ -500,3 +500,63 @@ class UltraDNSModule:
                 has_more = False
         
         return all_zones, self._no_change(f"Retrieved {len(all_zones)} zones")
+
+    def get_zone_metadata(self):
+        """
+        Retrieve metadata for a list of specific zones from the UltraDNS API.
+        
+        This function sends a GET request to /v3/zones/{zone_name} for each zone
+        in the provided list and collects the results. If a zone doesn't exist
+        or there's an error retrieving it, the function handles this gracefully
+        without failing the entire operation.
+        
+        Returns:
+            A dictionary with zone names as keys and their metadata as values,
+            plus a result object indicating success or failure
+        """
+        # Check for required fields
+        required = ['zones']
+        missing = self._check_params(required)
+        
+        if missing:
+            return {}, self._fail_no_change(f"Missing required fields: {', '.join(missing)}")
+            
+        # Connect to the API
+        if not self.connect():
+            return {}, self._fail_no_change()
+            
+        # Get the list of zones to fetch
+        zone_names = self.params['zones']
+        if not isinstance(zone_names, list):
+            return {}, self._fail_no_change("The 'zones' parameter must be a list of zone names")
+            
+        # Initialize dictionary to store zone metadata
+        zone_metadata = {}
+        
+        # Determine if we should fail on error
+        fail_on_error = self.params.get('fail_on_error', False)
+        
+        # Fetch metadata for each zone
+        for zone_name in zone_names:
+            result = self.connection.get(f"/v3/zones/{zone_name}")
+            
+            # Check if response has an error - might be a dict with errorCode or a list with error object
+            if isinstance(result, list) and result and 'errorCode' in result[0]:
+                if fail_on_error:
+                    return zone_metadata, self._fail_no_change(
+                        f"Error retrieving zone '{zone_name}': {result[0].get('errorMessage', 'Unknown error')}"
+                    )
+                # If we're not failing on error, log the error and continue
+                continue
+            elif isinstance(result, dict) and 'errorCode' in result:
+                if fail_on_error:
+                    return zone_metadata, self._fail_no_change(
+                        f"Error retrieving zone '{zone_name}': {result.get('errorMessage', 'Unknown error')}"
+                    )
+                # If we're not failing on error, log the error and continue
+                continue
+                
+            # Store the zone metadata
+            zone_metadata[zone_name] = result
+            
+        return zone_metadata, self._no_change(f"Retrieved metadata for {len(zone_metadata)} out of {len(zone_names)} requested zones")

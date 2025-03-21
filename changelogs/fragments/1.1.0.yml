@@ -1,4 +1,5 @@
 ---
-release_summary: Added support for zone_facts module
+release_summary: Added support for zone_facts and zone_meta_facts modules
 new_modules:
   - zone_facts - Get facts about zones in UltraDNS
+  - zone_meta_facts - Get metadata for specific zones in UltraDNS
