@@ -678,8 +678,8 @@ class UltraDNSModule:
                 returned_count = result['resultInfo'].get('returnedCount', 0)
                 offset += returned_count
                 
-                # If we got fewer records than requested, we're done
-                if returned_count < 1000:
+                # If we've processed all records based on totalCount, we're done
+                if offset >= total_count:
                     break
             else:
                 # If no resultInfo, assume we're done
