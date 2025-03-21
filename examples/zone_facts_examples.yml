@@ -1,0 +1,61 @@
+---
+# Examples for the ultradns.ultradns.zone_facts module
+
+- name: Demonstrating the use of zone_facts module
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    # Define UltraDNS provider details - typically stored in vault or vars
+    ultra_provider:
+      username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
+      password: "{{ lookup('env', 'ULTRADNS_PASSWORD') }}"
+      use_test: "{{ lookup('env', 'ULTRADNS_USE_TEST') | default(false) | bool }}"
+
+  tasks:
+    # Example 1: Get all zones with no filtering
+    - name: Retrieve all zones
+      ultradns.ultradns.zone_facts:
+        provider: "{{ ultra_provider }}"
+      register: all_zones
+
+    - name: Display zone count
+      ansible.builtin.debug:
+        msg: "Found {{ all_zones.ansible_facts.zones | length }} zones"
+
+    # Example 2: Filter zones by name (partial match)
+    - name: Get zones matching a name pattern
+      ultradns.ultradns.zone_facts:
+        provider: "{{ ultra_provider }}"
+        name: "example"  # Will match zones containing "example"
+      register: filtered_zones
+
+    - name: Display filtered zones by name
+      ansible.builtin.debug:
+        msg: "Zone: {{ item.properties.name }}"
+      loop: "{{ filtered_zones.ansible_facts.zones }}"
+      when: filtered_zones.ansible_facts.zones | length > 0
+
+    # Example 3: Filter by zone type
+    - name: Get only PRIMARY zones
+      ultradns.ultradns.zone_facts:
+        provider: "{{ ultra_provider }}"
+        type: "PRIMARY"
+      register: primary_zones
+
+    # Example 4: Filter by multiple criteria
+    - name: Get ACTIVE PRIMARY zones for specific account
+      ultradns.ultradns.zone_facts:
+        provider: "{{ ultra_provider }}"
+        type: "PRIMARY"
+        status: "ACTIVE"
+        account: "example-account"
+      register: specific_zones
+
+    # Example 5: Using different network and status filters
+    - name: Get suspended zones on ultra2 network
+      ultradns.ultradns.zone_facts:
+        provider: "{{ ultra_provider }}"
+        status: "SUSPENDED"
+        network: "ultra2"
+      register: suspended_zones

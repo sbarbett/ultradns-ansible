@@ -1,0 +1,68 @@
+---
+# Practical workflow example using zone_facts module
+
+- name: Zone management workflow using zone_facts
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    ultra_provider:
+      username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
+      password: "{{ lookup('env', 'ULTRADNS_PASSWORD') }}"
+      use_test: "{{ lookup('env', 'ULTRADNS_USE_TEST') | default(false) | bool }}"
+    target_account: "example-account"
+    target_domain_pattern: "example"
+
+  tasks:
+    # Step 1: Find all zones matching our criteria
+    - name: Find zones matching our criteria
+      ultradns.ultradns.zone_facts:
+        provider: "{{ ultra_provider }}"
+        name: "{{ target_domain_pattern }}"
+        type: "PRIMARY"
+        status: "ACTIVE"
+        account: "{{ target_account }}"
+      register: matching_zones
+
+    # Step 2: Summarize what we found
+    - name: Display summary of matching zones
+      ansible.builtin.debug:
+        msg: "Found {{ matching_zones.ansible_facts.zones | length }} zones matching '{{ target_domain_pattern }}' in account '{{ target_account }}'"
+
+    - name: Display zone names
+      ansible.builtin.debug:
+        msg: "- {{ item.properties.name }}"
+      loop: "{{ matching_zones.ansible_facts.zones }}"
+      when: matching_zones.ansible_facts.zones | length > 0 and item is defined and item.properties is defined
+
+    # Step 3: Create a standardized 'www' record in each zone
+    - name: Create www A record in matching zones
+      ultradns.ultradns.record:
+        provider: "{{ ultra_provider }}"
+        zone: "{{ item.properties.name }}"
+        name: "www"
+        type: "A"
+        data: "203.0.113.10"  # Example IP address
+        ttl: 300
+        state: present
+      loop: "{{ matching_zones.ansible_facts.zones }}"
+      when: matching_zones.ansible_facts.zones | length > 0 and item is defined and item.properties is defined
+      register: record_results
+
+    # Step 4: Create a TXT record for verification in each zone
+    - name: Add TXT verification record to each zone
+      ultradns.ultradns.record:
+        provider: "{{ ultra_provider }}"
+        zone: "{{ item.properties.name }}"
+        name: "verify"
+        type: "TXT"
+        data: "verification=example123"
+        ttl: 300
+        state: present
+      loop: "{{ matching_zones.ansible_facts.zones }}"
+      when: matching_zones.ansible_facts.zones | length > 0 and item is defined and item.properties is defined
+
+    # Step 5: Verify our changes by fetching zone records
+    - name: Report on changes made
+      ansible.builtin.debug:
+        msg: "Successfully updated DNS records in {{ record_results.results | selectattr('changed', 'equalto', true) | list | length }} zones."

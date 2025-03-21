@@ -1,0 +1,121 @@
+---
+# Zone reporting playbook using zone_facts module
+
+- name: Generate DNS zone inventory report
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    ultra_provider:
+      username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
+      password: "{{ lookup('env', 'ULTRADNS_PASSWORD') }}"
+      use_test: "{{ lookup('env', 'ULTRADNS_USE_TEST') | default(false) | bool }}"
+    report_file: "zone_inventory.csv"
+    report_json: "zone_inventory.json"
+
+  tasks:
+    # Gather facts about all zones across different zone types
+    - name: Gather PRIMARY zones
+      ultradns.ultradns.zone_facts:
+        provider: "{{ ultra_provider }}"
+        type: "PRIMARY"
+      register: primary_zones
+
+    - name: Gather SECONDARY zones
+      ultradns.ultradns.zone_facts:
+        provider: "{{ ultra_provider }}"
+        type: "SECONDARY"
+      register: secondary_zones
+
+    - name: Gather ALIAS zones
+      ultradns.ultradns.zone_facts:
+        provider: "{{ ultra_provider }}"
+        type: "ALIAS"
+      register: alias_zones
+
+    # Display summary of what we found
+    - name: Display summary of zones by type
+      ansible.builtin.debug:
+        msg: |
+          DNS Zone Inventory Summary:
+          - PRIMARY zones: {{ primary_zones.ansible_facts.zones | length }}
+          - SECONDARY zones: {{ secondary_zones.ansible_facts.zones | length }}
+          - ALIAS zones: {{ alias_zones.ansible_facts.zones | length }}
+          - TOTAL zones: {{ (primary_zones.ansible_facts.zones | length) +
+                            (secondary_zones.ansible_facts.zones | length) +
+                            (alias_zones.ansible_facts.zones | length) }}
+
+    # Generate CSV report
+    - name: Create CSV header
+      ansible.builtin.copy:
+        content: "Zone Name,Account Name,Zone Type,Status,Last Modified Date\n"
+        dest: "{{ report_file }}"
+        force: true
+        mode: '0644'
+
+    # Process each zone type separately for the CSV file
+    - name: Append PRIMARY zones to CSV file
+      ansible.builtin.lineinfile:
+        path: "{{ report_file }}"
+        line: >-
+          {{ item.properties.name | default('N/A') }},
+          {{ item.properties.accountName | default('N/A') }},
+          {{ item.properties.type | default('N/A') }},
+          {{ item.properties.status | default('N/A') }},
+          {{ item.properties.lastModifiedDateTime | default('N/A') }}
+        insertafter: EOF
+      loop: "{{ primary_zones.ansible_facts.zones }}"
+      when: item is defined and item.properties is defined
+
+    - name: Append SECONDARY zones to CSV file
+      ansible.builtin.lineinfile:
+        path: "{{ report_file }}"
+        line: >-
+          {{ item.properties.name | default('N/A') }},
+          {{ item.properties.accountName | default('N/A') }},
+          {{ item.properties.type | default('N/A') }},
+          {{ item.properties.status | default('N/A') }},
+          {{ item.properties.lastModifiedDateTime | default('N/A') }}
+        insertafter: EOF
+      loop: "{{ secondary_zones.ansible_facts.zones }}"
+      when: item is defined and item.properties is defined
+
+    - name: Append ALIAS zones to CSV file
+      ansible.builtin.lineinfile:
+        path: "{{ report_file }}"
+        line: >-
+          {{ item.properties.name | default('N/A') }},
+          {{ item.properties.accountName | default('N/A') }},
+          {{ item.properties.type | default('N/A') }},
+          {{ item.properties.status | default('N/A') }},
+          {{ item.properties.lastModifiedDateTime | default('N/A') }}
+        insertafter: EOF
+      loop: "{{ alias_zones.ansible_facts.zones }}"
+      when: item is defined and item.properties is defined
+
+    # Prepare data for JSON report - each zone type separately
+    - name: Create arrays of zone properties for JSON report
+      ansible.builtin.set_fact:
+        primary_properties: "{{ primary_zones.ansible_facts.zones | map(attribute='properties') | list }}"
+        secondary_properties: "{{ secondary_zones.ansible_facts.zones | map(attribute='properties') | list }}"
+        alias_properties: "{{ alias_zones.ansible_facts.zones | map(attribute='properties') | list }}"
+
+    # Combine for JSON report
+    - name: Combine zone properties for JSON report
+      ansible.builtin.set_fact:
+        combined_properties: "{{ primary_properties + secondary_properties + alias_properties }}"
+
+    # Save the complete data as JSON for more detailed reporting
+    - name: Save full zone data as JSON
+      ansible.builtin.copy:
+        content: "{{ combined_properties | to_nice_json }}"
+        dest: "{{ report_json }}"
+        force: true
+        mode: '0644'
+
+    - name: Report generation complete
+      ansible.builtin.debug:
+        msg: |
+          Reports generated:
+          - CSV report: {{ report_file }}
+          - JSON report: {{ report_json }}

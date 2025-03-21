@@ -1,0 +1,98 @@
+---
+# Example playbook to demonstrate the zone_meta_facts module
+
+- name: Demonstrate zone_meta_facts module usage
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    ultra_provider:
+      username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
+      password: "{{ lookup('env', 'ULTRADNS_PASSWORD') }}"
+      use_test: "{{ lookup('env', 'ULTRADNS_USE_TEST') | default(false) | bool }}"
+
+  tasks:
+    # First, list zones to find some to work with
+    - name: Get a list of PRIMARY zones
+      ultradns.ultradns.zone_facts:
+        provider: "{{ ultra_provider }}"
+        type: PRIMARY
+        name: "test" # Consider using a filter here to limit the number of zones returned
+      register: zone_list
+
+    # Extract zone names from the zone_facts result
+    - name: Extract zone names
+      ansible.builtin.set_fact:
+        zone_names: "{{ zone_list.ansible_facts.zones | map(attribute='properties.name') | list | default([]) }}"
+
+    # Use zone_meta_facts to get detailed metadata for each zone
+    - name: Get detailed metadata for specific zones
+      ultradns.ultradns.zone_meta_facts:
+        provider: "{{ ultra_provider }}"
+        zones: "{{ zone_names }}"
+      register: zone_metadata
+      when: zone_names | length > 0
+
+    # Display the metadata we retrieved
+    - name: Display zone metadata
+      ansible.builtin.debug:
+        msg: >-
+          Zone: {{ item.key }} -
+          Type: {{ item.value.properties.type | default('N/A') }},
+          Status: {{ item.value.properties.status | default('N/A') }},
+          Last Modified: {{ item.value.properties.lastModifiedDateTime | default('N/A') }}
+      loop: "{{ zone_metadata.ansible_facts.zone_meta | default({}) | dict2items }}"
+      when: zone_names | length > 0
+
+    # Example with made-up zones to demonstrate error handling
+    # The module will not fail because fail_on_error is false (the default),
+    # but none of these zones will be in the returned zone_meta dictionary
+    - name: Try to get metadata for non-existent zones
+      ultradns.ultradns.zone_meta_facts:
+        provider: "{{ ultra_provider }}"
+        zones:
+          - "nonexistent1.example.com"
+          - "nonexistent2.example.com"
+        fail_on_error: false  # Don't fail if zones don't exist
+      register: missing_zones
+
+    # Display what we got back for non-existent zones
+    - name: Show results for non-existent zones
+      ansible.builtin.debug:
+        msg: "Retrieved metadata for {{ missing_zones.ansible_facts.zone_meta | length }} zones out of 2 requested"
+
+    # Example with mixed existing and non-existing zones
+    # This demonstrates the module skipping zones that don't exist while
+    # still returning metadata for zones that do exist
+    - name: Get metadata for mixed existing and non-existing zones
+      ultradns.ultradns.zone_meta_facts:
+        provider: "{{ ultra_provider }}"
+        zones: "{{ zone_names[:1] + ['nonexistent.example.com'] }}"
+        fail_on_error: false
+      register: mixed_zones
+      when: zone_names | length > 0
+
+    # Show results from mixed query
+    - name: Show results from mixed query
+      ansible.builtin.debug:
+        msg: "Retrieved metadata for {{ mixed_zones.ansible_facts.zone_meta | length }} zones: {{ mixed_zones.ansible_facts.zone_meta.keys() | list }}"
+      when: zone_names | length > 0
+
+    # Identify which zones were not found
+    - name: Identify non-existent zones
+      ansible.builtin.set_fact:
+        missing_zone_names: "{{ (zone_names[:1] + ['nonexistent.example.com']) | difference(mixed_zones.ansible_facts.zone_meta.keys() | list) }}"
+      when: zone_names | length > 0
+
+    - name: Show which zones were not found
+      ansible.builtin.debug:
+        msg: "The following zones were not found: {{ missing_zone_names | join(', ') }}"
+      when: zone_names | length > 0 and missing_zone_names | length > 0
+
+    # Export zone metadata to JSON file
+    - name: Export zone metadata to JSON
+      ansible.builtin.copy:
+        content: "{{ zone_metadata.ansible_facts.zone_meta | default({}) | to_nice_json }}"
+        dest: "zone_metadata.json"
+        mode: '0644'
+      when: zone_names | length > 0

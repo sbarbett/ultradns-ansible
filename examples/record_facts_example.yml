@@ -1,0 +1,140 @@
+---
+# Example playbook to demonstrate the record_facts module
+
+- name: Demonstrate record_facts module usage
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    ultra_provider:
+      username: "{{ lookup('env', 'ULTRADNS_USERNAME') }}"
+      password: "{{ lookup('env', 'ULTRADNS_PASSWORD') }}"
+      use_test: "{{ lookup('env', 'ULTRADNS_USE_TEST') | default(false) | bool }}"
+    zone_name: "{{ lookup('env', 'ULTRADNS_TEST_ZONE') | default('example.com') }}"
+
+  tasks:
+    # Basic example: Get all records for a zone
+    - name: Get all records for the zone
+      ultradns.ultradns.record_facts:
+        zone: "{{ zone_name }}"
+        provider: "{{ ultra_provider }}"
+      register: all_records
+
+    # Display summary of records found
+    - name: Display summary of records found
+      ansible.builtin.debug:
+        msg: >-
+          Found {{ all_records.ansible_facts.record_facts | length }} records in zone {{ zone_name }}
+          Note: Record types (rrtype) in the API response include a type number, e.g. 'A (1)', 'AAAA (28)'
+
+    # Example showing how to filter and display specific record type
+    - name: Get only A records by filtering on value
+      ultradns.ultradns.record_facts:
+        zone: "{{ zone_name }}"
+        provider: "{{ ultra_provider }}"
+        # Filter records containing IP addresses starting with 192.168
+        value: "192.168"
+      register: a_records
+
+    # Display filtered records
+    - name: Display A records found
+      ansible.builtin.debug:
+        msg: >-
+          Record: {{ item.ownerName }} ({{ item.rrtype }}),
+          TTL: {{ item.ttl }},
+          Data: {{ item.rdata | join(', ') }}
+      loop: "{{ a_records.ansible_facts.record_facts }}"
+      when: a_records.ansible_facts.record_facts | length > 0 and item.rrtype is regex("^A\\s")
+
+    # Example showing how to filter by owner name
+    - name: Get records for a specific owner
+      ultradns.ultradns.record_facts:
+        zone: "{{ zone_name }}"
+        provider: "{{ ultra_provider }}"
+        # Filter records with "www" in the owner name
+        owner: "www"
+      register: www_records
+
+    # Display records by owner
+    - name: Display www records
+      ansible.builtin.debug:
+        msg: >-
+          Record: {{ item.ownerName }} ({{ item.rrtype }}),
+          TTL: {{ item.ttl }},
+          Data: {{ item.rdata | join(', ') }}
+      loop: "{{ www_records.ansible_facts.record_facts }}"
+      when: www_records.ansible_facts.record_facts | length > 0
+
+    # Example showing how to filter by TTL
+    - name: Get records with a specific TTL
+      ultradns.ultradns.record_facts:
+        zone: "{{ zone_name }}"
+        provider: "{{ ultra_provider }}"
+        # Filter records with TTL of 3600
+        ttl: 3600
+        # TTL filter only applies to RECORDS kind
+        kind: RECORDS
+      register: ttl_records
+
+    # Display records with specific TTL
+    - name: Display records with TTL of 3600
+      ansible.builtin.debug:
+        msg: >-
+          Record: {{ item.ownerName }} ({{ item.rrtype }}),
+          TTL: {{ item.ttl }},
+          Data: {{ item.rdata | join(', ') }}
+      loop: "{{ ttl_records.ansible_facts.record_facts }}"
+      when: ttl_records.ansible_facts.record_facts | length > 0
+
+    # Example showing how to get pool records
+    - name: Get only pool records
+      ultradns.ultradns.record_facts:
+        zone: "{{ zone_name }}"
+        provider: "{{ ultra_provider }}"
+        kind: POOLS
+      register: pool_records
+
+    # Display pool records information
+    - name: Show pool records count
+      ansible.builtin.debug:
+        msg: "Found {{ pool_records.ansible_facts.record_facts | length }} pool records"
+
+    # Example showing reversed order and system-generated records
+    - name: Get records with system-generated status information
+      ultradns.ultradns.record_facts:
+        zone: "{{ zone_name }}"
+        provider: "{{ ultra_provider }}"
+        sys_generated: true  # Include system-generated status information
+        reverse: true
+      register: sys_records
+
+    # Show total count of records with system-generated status
+    - name: Show count of records with system-generated status
+      ansible.builtin.debug:
+        msg: "Found {{ sys_records.ansible_facts.record_facts | length }} records with system-generated status information"
+
+    # Display which records are system-generated
+    - name: Identify system-generated records
+      ansible.builtin.debug:
+        msg: "Record {{ item.ownerName }} ({{ item.rrtype }}) is {{ 'system-generated' if item.systemGenerated[0] else 'user-created' }}"
+      loop: "{{ sys_records.ansible_facts.record_facts }}"
+      when: "'systemGenerated' in item"
+
+    # Display records with multiple rdata entries and their system-generated status
+    - name: Show multi-value records with system-generated status
+      ansible.builtin.debug:
+        msg: >-
+          Record {{ item.ownerName }} ({{ item.rrtype }}) -
+          {% for i in range(item.rdata | length) %}
+          Value {{ i + 1 }}: {{ item.rdata[i] }} ({{ 'system-generated' if item.systemGenerated[i] else 'user-created' }})
+          {% endfor %}
+      loop: "{{ sys_records.ansible_facts.record_facts }}"
+      when: "'systemGenerated' in item and (item.rdata | length) > 1"
+
+    # Export record data to JSON file
+    - name: Export all records to JSON
+      ansible.builtin.copy:
+        content: "{{ all_records.ansible_facts.record_facts | to_nice_json }}"
+        dest: "{{ zone_name }}_records.json"
+        mode: '0644'
+      when: all_records.ansible_facts.record_facts | length > 0

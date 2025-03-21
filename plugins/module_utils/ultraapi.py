@@ -387,3 +387,296 @@ class UltraDNSModule:
         else:
             res = self._fail_no_change(f"Unsupported state {self.params['state']}")
         return res
+
+    def get_zones(self):
+        """
+        Retrieve all zones from the UltraDNS API with pagination support.
+
+        This function handles cursor-based pagination automatically, making multiple
+        requests as needed to retrieve all zones. The default limit is set to 1000
+        zones per request, and filtering is done based on provided parameters.
+
+        Returns:
+            A list of zone objects from the API response
+        """
+        # Connect to the API
+        if not self.connect():
+            return [], self._fail_no_change()
+
+        # Initialize empty zones list and base URL
+        all_zones = []
+        base_path = '/v3/zones'
+
+        # Build the query string for filters
+        query_parts = []
+
+        # Add limit parameter
+        query_parts.append('limit=1000')
+
+        # Filter by name (partial match)
+        if 'name' in self.params and self.params['name']:
+            query_parts.append(f"q=name:{self.params['name']}")
+
+        # Filter by zone type
+        if 'type' in self.params and self.params['type']:
+            zone_type = self.params['type']
+            if zone_type in ['PRIMARY', 'SECONDARY', 'ALIAS']:
+                if 'q=' in ' '.join(query_parts):
+                    # Append to existing q parameter
+                    q_index = next(i for i, part in enumerate(query_parts) if part.startswith('q='))
+                    query_parts[q_index] = f"{query_parts[q_index]}+zone_type:{zone_type}"
+                else:
+                    query_parts.append(f"q=zone_type:{zone_type}")
+
+        # Filter by status
+        if 'status' in self.params and self.params['status']:
+            status = self.params['status']
+            if status in ['ACTIVE', 'SUSPENDED', 'ALL']:
+                if 'q=' in ' '.join(query_parts):
+                    # Append to existing q parameter
+                    q_index = next(i for i, part in enumerate(query_parts) if part.startswith('q='))
+                    query_parts[q_index] = f"{query_parts[q_index]}+zone_status:{status}"
+                else:
+                    query_parts.append(f"q=zone_status:{status}")
+
+        # Filter by account name
+        if 'account' in self.params and self.params['account']:
+            # URL-encode spaces in account name
+            account = self.params['account'].replace(' ', '%20')
+            if 'q=' in ' '.join(query_parts):
+                # Append to existing q parameter
+                q_index = next(i for i, part in enumerate(query_parts) if part.startswith('q='))
+                query_parts[q_index] = f"{query_parts[q_index]}+account_name:{account}"
+            else:
+                query_parts.append(f"q=account_name:{account}")
+
+        # Filter by network
+        if 'network' in self.params and self.params['network']:
+            network = self.params['network']
+            if network in ['ultra1', 'ultra2']:
+                if 'q=' in ' '.join(query_parts):
+                    # Append to existing q parameter
+                    q_index = next(i for i, part in enumerate(query_parts) if part.startswith('q='))
+                    query_parts[q_index] = f"{query_parts[q_index]}+network:{network}"
+                else:
+                    query_parts.append(f"q=network:{network}")
+
+        # Build initial path with query parameters
+        path = base_path
+        if query_parts:
+            path = f"{base_path}?{'&'.join(query_parts)}"
+
+        # Track if we have more data to fetch
+        has_more = True
+        next_path = path
+
+        while has_more:
+            # Get zones with current path
+            result = self.connection.get(next_path)
+
+            # Check if response has an error
+            if 'errorCode' in result:
+                return [], self._fail_no_change(result['errorMessage'])
+
+            # Add zones from current response to our collection
+            if 'zones' in result and isinstance(result['zones'], list):
+                all_zones.extend(result['zones'])
+
+            # Check for cursorInfo to determine if more data is available
+            if 'cursorInfo' in result and result['cursorInfo'].get('next'):
+                cursor = result['cursorInfo']['next']
+                # Determine if the path already has query parameters
+                if '?' in next_path:
+                    if 'cursor=' in next_path:
+                        # Replace existing cursor parameter
+                        next_path = next_path.split('cursor=', maxsplit=1)[0] + f"cursor={cursor}"
+                    else:
+                        # Add cursor parameter
+                        next_path = f"{next_path}&cursor={cursor}"
+                else:
+                    # Add cursor as first parameter
+                    next_path = f"{next_path}?cursor={cursor}"
+            else:
+                has_more = False
+
+        return all_zones, self._no_change(f"Retrieved {len(all_zones)} zones")
+
+    def get_zone_metadata(self):
+        """
+        Retrieve metadata for a list of specific zones from the UltraDNS API.
+
+        This function sends a GET request to /v3/zones/{zone_name} for each zone
+        in the provided list and collects the results. If a zone doesn't exist
+        or there's an error retrieving it, the function handles this gracefully
+        without failing the entire operation.
+
+        Returns:
+            A dictionary with zone names as keys and their metadata as values,
+            plus a result object indicating success or failure
+        """
+        # Check for required fields
+        required = ['zones']
+        missing = self._check_params(required)
+
+        if missing:
+            return {}, self._fail_no_change(f"Missing required fields: {', '.join(missing)}")
+
+        # Connect to the API
+        if not self.connect():
+            return {}, self._fail_no_change()
+
+        # Get the list of zones to fetch
+        zone_names = self.params['zones']
+        if not isinstance(zone_names, list):
+            return {}, self._fail_no_change("The 'zones' parameter must be a list of zone names")
+
+        # Initialize dictionary to store zone metadata
+        zone_metadata = {}
+
+        # Determine if we should fail on error
+        fail_on_error = self.params.get('fail_on_error', False)
+
+        # Fetch metadata for each zone
+        for zone_name in zone_names:
+            result = self.connection.get(f"/v3/zones/{zone_name}")
+
+            # Check if response has an error - might be a dict with errorCode or a list with error object
+            if isinstance(result, list) and result and 'errorCode' in result[0]:
+                if fail_on_error:
+                    return zone_metadata, self._fail_no_change(
+                        f"Error retrieving zone '{zone_name}': {result[0].get('errorMessage', 'Unknown error')}"
+                    )
+                # If we're not failing on error, log the error and continue
+                continue
+            elif isinstance(result, dict) and 'errorCode' in result:
+                if fail_on_error:
+                    return zone_metadata, self._fail_no_change(
+                        f"Error retrieving zone '{zone_name}': {result.get('errorMessage', 'Unknown error')}"
+                    )
+                # If we're not failing on error, log the error and continue
+                continue
+
+            # Store the zone metadata
+            zone_metadata[zone_name] = result
+
+        return zone_metadata, self._no_change(f"Retrieved metadata for {len(zone_metadata)} out of {len(zone_names)} requested zones")
+
+    def get_records(self):
+        """
+        Retrieve RRSet records for a specified zone from the UltraDNS API with offset-based pagination.
+
+        This function handles offset-based pagination automatically, making multiple
+        requests as needed to retrieve all records. The default limit is set to 1000
+        records per request, and filtering is done based on provided parameters.
+
+        Returns:
+            A list of RRSet records from the API response plus a result object indicating success or failure
+        """
+        # Check for required fields
+        required = ['zone']
+        missing = self._check_params(required)
+
+        if missing:
+            return [], self._fail_no_change(f"Missing required fields: {', '.join(missing)}")
+
+        # Connect to the API
+        if not self.connect():
+            return [], self._fail_no_change()
+
+        # Initialize empty records list and base URL
+        all_records = []
+        zone_name = self.params['zone']
+        base_path = f"/v3/zones/{zone_name}/rrsets"
+
+        # Build the query parameters
+        query_parts = []
+
+        # Always include a limit parameter
+        query_parts.append('limit=1000')
+
+        # Build the 'q' parameter for filtering
+        q_filters = []
+
+        # Filter by owner (partial match)
+        if 'owner' in self.params and self.params['owner']:
+            q_filters.append(f"owner:{self.params['owner']}")
+
+        # Filter by TTL (exact match) - only for RECORDS type
+        if 'ttl' in self.params and self.params['ttl'] is not None:
+            if not self.params.get('kind') or self.params.get('kind') in ['ALL', 'RECORDS']:
+                q_filters.append(f"ttl:{self.params['ttl']}")
+
+        # Filter by value (partial match) - only for RECORDS type
+        if 'value' in self.params and self.params['value']:
+            if not self.params.get('kind') or self.params.get('kind') in ['ALL', 'RECORDS']:
+                q_filters.append(f"value:{self.params['value']}")
+
+        # Add q parameter if filters exist
+        if q_filters:
+            query_parts.append(f"q={'+'.join(q_filters)}")
+
+        # Filter by kind (type of RRSets)
+        if 'kind' in self.params and self.params['kind']:
+            kind = self.params['kind']
+            valid_kinds = ['ALL', 'RECORDS', 'POOLS', 'RD_POOLS', 'DIR_POOLS', 'SB_POOLS', 'TC_POOLS']
+            if kind in valid_kinds:
+                query_parts.append(f"kind={kind}")
+
+        # Add reverse parameter if specified
+        if 'reverse' in self.params and self.params['reverse']:
+            query_parts.append('reverse=true')
+
+        # Add systemGeneratedStatus parameter if specified
+        # This adds status indicators (systemGenerated array) to records rather than filtering them
+        if 'sys_generated' in self.params and self.params['sys_generated']:
+            query_parts.append('systemGeneratedStatus=true')
+
+        # Build initial path with query parameters
+        path = base_path
+        if query_parts:
+            path = f"{base_path}?{'&'.join(query_parts)}"
+
+        # Track offset and total count for pagination
+        offset = 0
+        total_count = None
+
+        while total_count is None or offset < total_count:
+            # Build current request path with offset
+            current_path = path
+            if '?' in current_path:
+                current_path += f"&offset={offset}"
+            else:
+                current_path += f"?offset={offset}"
+
+            # Get records with current path
+            result = self.connection.get(current_path)
+
+            # Check if response has an error
+            if isinstance(result, list) and result and 'errorCode' in result[0]:
+                return [], self._fail_no_change(f"Error retrieving records: {result[0].get('errorMessage', 'Unknown error')}")
+            elif isinstance(result, dict) and 'errorCode' in result:
+                # For "no records found" we should return an empty list without failing
+                if result.get('errorCode') == 70002:  # Data not found error code
+                    return [], self._no_change("No records found for the specified zone and filters")
+                return [], self._fail_no_change(f"Error retrieving records: {result.get('errorMessage', 'Unknown error')}")
+
+            # Extract records from the response
+            if 'rrSets' in result:
+                all_records.extend(result['rrSets'])
+
+            # Update pagination information
+            if 'resultInfo' in result:
+                if total_count is None:
+                    total_count = result['resultInfo'].get('totalCount', 0)
+
+                returned_count = result['resultInfo'].get('returnedCount', 0)
+                offset += returned_count
+
+                # If we've processed all records based on totalCount, we're done
+                if offset >= total_count:
+                    break
+            else:
+                # If no resultInfo, assume we're done
+                break
+
+        return all_records, self._no_change(f"Retrieved {len(all_records)} records")
