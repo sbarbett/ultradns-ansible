@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: UltraDNS
+# Copyright: (c) 2024, UltraDNS <info@ultradns.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -10,46 +10,71 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: zone_facts
-author: UltraDNS (@ultradns)
-short_description: Retrieve DNS zone facts from UltraDNS
+short_description: Get facts about zones in UltraDNS
+version_added: 1.1.0
 description:
-    - Retrieve information about DNS zones from UltraDNS without making any changes.
-    - Returns the zones as Ansible facts for use in subsequent plays.
-    - Supports cursor-based pagination and various filtering options.
-version_added: 0.1.0
-extends_documentation_fragment: ultradns.ultradns.ultra_provider
+    - Retrieves DNS zones from UltraDNS with pagination support.
+    - Supports various filtering options (name, type, status, account).
+    - Returns facts about the zones under the C(zones) key.
+    - This module is idempotent and does not make any changes.
+author:
+    - "UltraDNS (@ultradns)"
 options:
     name:
         description:
-            - Filter zones by this name (partial match).
+            - Filter zones by name (partial match).
         required: false
         type: str
     type:
         description:
-            - Filter zones by this type.
+            - Filter zones by type.
         required: false
-        choices: ['PRIMARY', 'SECONDARY', 'ALIAS']
         type: str
+        choices: ['PRIMARY', 'SECONDARY', 'ALIAS']
     status:
         description:
-            - Filter zones by this status.
-            - Defaults to 'ACTIVE' if not specified.
+            - Filter zones by status.
         required: false
-        choices: ['ACTIVE', 'SUSPENDED', 'ALL']
         type: str
+        choices: ['ACTIVE', 'SUSPENDED', 'ALL']
     account:
         description:
-            - Filter zones by this account name.
-            - Spaces in the account name will be URL-encoded automatically.
+            - Filter zones by account name.
         required: false
         type: str
     network:
         description:
-            - Filter zones by this network.
-            - Defaults to 'ultra1' if not specified.
+            - Filter zones by network.
         required: false
-        choices: ['ultra1', 'ultra2']
         type: str
+        choices: ['ultra1', 'ultra2']
+    provider:
+        description:
+            - Dictionary containing connection details.
+        required: false
+        type: dict
+        suboptions:
+            username:
+                description:
+                    - UltraDNS username for API authentication.
+                    - If not set, the ULTRADNS_USERNAME environment variable will be used.
+                required: false
+                type: str
+            password:
+                description:
+                    - UltraDNS password for API authentication.
+                    - If not set, the ULTRADNS_PASSWORD environment variable will be used.
+                required: false
+                type: str
+            use_test:
+                description:
+                    - If set to true, use the UltraDNS test environment.
+                    - If not set, the ULTRADNS_USE_TEST environment variable will be used.
+                required: false
+                type: bool
+                default: false
+notes:
+    - This module returns facts only, not state changes.
 '''
 
 EXAMPLES = '''
@@ -87,7 +112,6 @@ ansible_facts:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.basic import env_fallback
 from ..module_utils.ultraapi import ultra_connection_spec
 from ..module_utils.ultraapi import UltraDNSModule
 
@@ -105,7 +129,7 @@ def main():
     # Add the arguments required for connecting to UltraDNS API
     argspec.update(ultra_connection_spec())
 
-    module = AnsibleModule(argument_spec=argspec)
+    module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
     api = UltraDNSModule(module.params)
 
     # Get zones with pagination
@@ -120,4 +144,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main() 
+    main()

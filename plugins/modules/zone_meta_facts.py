@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: UltraDNS
+# Copyright: (c) 2024, UltraDNS <info@ultradns.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -40,7 +40,6 @@ options:
     provider:
         description:
             - Dictionary containing connection details.
-        required: true
         type: dict
         suboptions:
             username:
@@ -130,7 +129,6 @@ ansible_facts:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.basic import env_fallback
 from ..module_utils.ultraapi import ultra_connection_spec
 from ..module_utils.ultraapi import UltraDNSModule
 
@@ -145,7 +143,7 @@ def main():
     # Add the arguments required for connecting to UltraDNS API
     argspec.update(ultra_connection_spec())
 
-    module = AnsibleModule(argument_spec=argspec)
+    module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
     api = UltraDNSModule(module.params)
 
     # Get metadata for the specified zones
@@ -160,4 +158,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main() 
+    main()
