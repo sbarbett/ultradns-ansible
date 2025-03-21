@@ -1,3 +1,9 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Copyright: UltraDNS
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 from ansible.module_utils.basic import env_fallback
@@ -560,3 +566,123 @@ class UltraDNSModule:
             zone_metadata[zone_name] = result
             
         return zone_metadata, self._no_change(f"Retrieved metadata for {len(zone_metadata)} out of {len(zone_names)} requested zones")
+
+    def get_records(self):
+        """
+        Retrieve RRSet records for a specified zone from the UltraDNS API with offset-based pagination.
+        
+        This function handles offset-based pagination automatically, making multiple
+        requests as needed to retrieve all records. The default limit is set to 1000 
+        records per request, and filtering is done based on provided parameters.
+        
+        Returns:
+            A list of RRSet records from the API response plus a result object indicating success or failure
+        """
+        # Check for required fields
+        required = ['zone']
+        missing = self._check_params(required)
+        
+        if missing:
+            return [], self._fail_no_change(f"Missing required fields: {', '.join(missing)}")
+            
+        # Connect to the API
+        if not self.connect():
+            return [], self._fail_no_change()
+            
+        # Initialize empty records list and base URL
+        all_records = []
+        zone_name = self.params['zone']
+        base_path = f"/v3/zones/{zone_name}/rrsets"
+        
+        # Build the query parameters
+        query_parts = []
+        
+        # Always include a limit parameter
+        query_parts.append('limit=1000')
+        
+        # Build the 'q' parameter for filtering
+        q_filters = []
+        
+        # Filter by owner (partial match)
+        if 'owner' in self.params and self.params['owner']:
+            q_filters.append(f"owner:{self.params['owner']}")
+        
+        # Filter by TTL (exact match) - only for RECORDS type
+        if 'ttl' in self.params and self.params['ttl'] is not None:
+            if not self.params.get('kind') or self.params.get('kind') in ['ALL', 'RECORDS']:
+                q_filters.append(f"ttl:{self.params['ttl']}")
+        
+        # Filter by value (partial match) - only for RECORDS type
+        if 'value' in self.params and self.params['value']:
+            if not self.params.get('kind') or self.params.get('kind') in ['ALL', 'RECORDS']:
+                q_filters.append(f"value:{self.params['value']}")
+        
+        # Add q parameter if filters exist
+        if q_filters:
+            query_parts.append(f"q={'+'.join(q_filters)}")
+        
+        # Filter by kind (type of RRSets)
+        if 'kind' in self.params and self.params['kind']:
+            kind = self.params['kind']
+            valid_kinds = ['ALL', 'RECORDS', 'POOLS', 'RD_POOLS', 'DIR_POOLS', 'SB_POOLS', 'TC_POOLS']
+            if kind in valid_kinds:
+                query_parts.append(f"kind={kind}")
+        
+        # Add reverse parameter if specified
+        if 'reverse' in self.params and self.params['reverse']:
+            query_parts.append('reverse=true')
+        
+        # Add systemGeneratedStatus parameter if specified
+        # This adds status indicators (systemGenerated array) to records rather than filtering them
+        if 'sys_generated' in self.params and self.params['sys_generated']:
+            query_parts.append('systemGeneratedStatus=true')
+        
+        # Build initial path with query parameters
+        path = base_path
+        if query_parts:
+            path = f"{base_path}?{'&'.join(query_parts)}"
+        
+        # Track offset and total count for pagination
+        offset = 0
+        total_count = None
+        
+        while total_count is None or offset < total_count:
+            # Build current request path with offset
+            current_path = path
+            if '?' in current_path:
+                current_path += f"&offset={offset}"
+            else:
+                current_path += f"?offset={offset}"
+            
+            # Get records with current path
+            result = self.connection.get(current_path)
+            
+            # Check if response has an error
+            if isinstance(result, list) and result and 'errorCode' in result[0]:
+                return [], self._fail_no_change(f"Error retrieving records: {result[0].get('errorMessage', 'Unknown error')}")
+            elif isinstance(result, dict) and 'errorCode' in result:
+                # For "no records found" we should return an empty list without failing
+                if result.get('errorCode') == 70002:  # Data not found error code
+                    return [], self._no_change("No records found for the specified zone and filters")
+                return [], self._fail_no_change(f"Error retrieving records: {result.get('errorMessage', 'Unknown error')}")
+            
+            # Extract records from the response
+            if 'rrSets' in result:
+                all_records.extend(result['rrSets'])
+            
+            # Update pagination information
+            if 'resultInfo' in result:
+                if total_count is None:
+                    total_count = result['resultInfo'].get('totalCount', 0)
+                
+                returned_count = result['resultInfo'].get('returnedCount', 0)
+                offset += returned_count
+                
+                # If we got fewer records than requested, we're done
+                if returned_count < 1000:
+                    break
+            else:
+                # If no resultInfo, assume we're done
+                break
+        
+        return all_records, self._no_change(f"Retrieved {len(all_records)} records")

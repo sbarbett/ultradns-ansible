@@ -11,12 +11,14 @@ Release Summary
 ---------------
 
 | Release Date: 2025-03-21
-| Added support for zone_facts module
+| Added support for zone_facts, zone_meta_facts, and record_facts modules
 
 New Modules
 -----------
 
 - zone_facts - Get facts about zones in UltraDNS
+- zone_meta_facts - Get metadata for specific zones in UltraDNS
+- record_facts - Get facts about DNS records in a zone in UltraDNS
 
 v1.0.3
 ======
