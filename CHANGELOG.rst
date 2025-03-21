@@ -10,7 +10,7 @@ v1.1.0
 Release Summary
 ---------------
 
-| Release Date: 2025-03-21
+| Release Date: 2025-03-20
 | Added support for zone_facts, zone_meta_facts, and record_facts modules
 
 New Modules
